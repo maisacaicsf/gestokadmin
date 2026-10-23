@@ -197,6 +197,14 @@
                 >
                     Notificações
                 </button>
+                <button
+                    type="button"
+                    class="admin-tab"
+                    data-tab="suporte"
+                    id="tabSuporte"
+                >
+                    Suporte
+                </button>
 
             </div>
 
@@ -703,7 +711,68 @@
 
             </section>
 
+            <!-- ABA SUPORTE -->
+            <section class="tab-content" id="tabContentSuporte">
+                <div class="page-header">
+                    <div>
+                        <span class="eyebrow">ATENDIMENTO</span>
+                        <h1>Suporte</h1>
+                        <p>Responda os chamados abertos pelas lojas do Gestok.</p>
+                    </div>
+                </div>
+                <div class="panel table-panel">
+                    <div class="panel-header">
+                        <div class="sup-toolbar">
+                            <select id="filtroSuporte">
+                                <option value="abertos">Em aberto</option>
+                                <option value="resolvidos">Resolvidos / fechados</option>
+                                <option value="todos">Todos</option>
+                            </select>
+                            <button type="button" class="send-button" id="btnAtualizarSuporte">Atualizar</button>
+                            <span id="statusSuporte" class="send-status"></span>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nº</th><th>Loja</th><th>Assunto</th><th>Categoria</th><th>Status</th><th>Última atividade</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listaChamadosAdmin"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
         </main>
+
+    <!-- MODAL DO CHAMADO -->
+    <div class="modal-overlay" id="modalChamadoAdmin" hidden>
+        <div class="modal sup-modal">
+            <div class="modal-header">
+                <div>
+                    <h2 id="supTitulo">Chamado</h2>
+                    <p id="supMeta"></p>
+                </div>
+                <button type="button" class="modal-close" id="supFechar">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="sup-conversa" id="supConversa"></div>
+                <div class="sup-resposta">
+                    <textarea id="supTexto" maxlength="2000" placeholder="Escreva a resposta para o cliente..."></textarea>
+                    <div class="sup-acoes">
+                        <select id="supStatus">
+                            <option>Aberto</option><option>Em atendimento</option><option>Resolvido</option><option>Fechado</option>
+                        </select>
+                        <button type="button" class="send-button" id="supEnviar">Enviar resposta</button>
+                        <button type="button" class="sup-sec" id="supSoStatus">Só atualizar status</button>
+                        <span id="supAviso" class="send-status"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     </section>
 

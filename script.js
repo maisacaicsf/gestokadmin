@@ -291,6 +291,7 @@ function mostrarPainelAdmin() {
     carregarLojas();
 
     carregarNotificacoes();
+    carregarSuporte();
 
 }
 
@@ -1493,9 +1494,7 @@ document
 
                     const alvo =
                         document.getElementById(
-                            nome === "lojas"
-                                ? "tabContentLojas"
-                                : "tabContentNotificacoes"
+                            "tabContent" + nome.charAt(0).toUpperCase() + nome.slice(1)
                         );
 
                     if (alvo) {
@@ -2044,3 +2043,215 @@ async function excluirNotificacao(id) {
     }
 
 }
+
+
+/* =====================================================
+   SUPORTE - CHAMADOS DAS LOJAS
+   Lê lojas/{id}/chamados e lojas/{id}/chamados/{id}/mensagens
+   (mesma estrutura usada pelo Gestok) e responde como "admin".
+===================================================== */
+
+let chamadosAdmin = [];
+let chamadoAdminAtual = null;
+
+function escSup(t) {
+    return String(t ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+function dataObjSup(v) {
+    try {
+        const d = v && typeof v.toDate === "function" ? v.toDate() : (v ? new Date(v) : null);
+        return d && !isNaN(d.getTime()) ? d : null;
+    } catch (e) { return null; }
+}
+
+function dataSup(v) {
+    const d = dataObjSup(v);
+    return d ? d.toLocaleString("pt-BR") : "—";
+}
+
+function tsSup(c) {
+    const d = dataObjSup(c.ultimaInteracao || c.atualizadoEm || c.criadoEm || c.data);
+    return d ? d.getTime() : 0;
+}
+
+function slugStatusSup(s) {
+    return String(s || "Aberto").trim().toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-");
+}
+
+function fechadoSup(c) {
+    const s = slugStatusSup(c.status);
+    return s === "resolvido" || s === "fechado";
+}
+
+function pendenteSup(c) {
+    return !fechadoSup(c) && c.ultimaMensagemAutor !== "admin" && !c.respostaSuporte;
+}
+
+async function carregarSuporte() {
+    const corpo = document.getElementById("listaChamadosAdmin");
+    const info = document.getElementById("statusSuporte");
+    if (!corpo) { return; }
+    if (info) { info.textContent = "Carregando..."; }
+    try {
+        const [lojasSnap, chSnap] = await Promise.all([
+            db.collection("lojas").get(),
+            db.collectionGroup("chamados").get()
+        ]);
+        const nomes = {};
+        lojasSnap.forEach(function (d) {
+            const x = d.data() || {};
+            nomes[d.id] = x.nome || x.nomeLoja || x.razaoSocial || d.id;
+        });
+        chamadosAdmin = chSnap.docs.map(function (d) {
+            const lojaId = d.ref.parent.parent.id;
+            return Object.assign({}, d.data(), {
+                id: d.id, lojaId: lojaId, lojaNome: nomes[lojaId] || lojaId, ref: d.ref
+            });
+        }).sort(function (a, b) { return tsSup(b) - tsSup(a); });
+        if (info) { info.textContent = ""; }
+        renderizarSuporte();
+    } catch (erro) {
+        console.error("Erro ao carregar chamados:", erro);
+        if (info) { info.textContent = "Não foi possível carregar os chamados."; info.className = "send-status error"; }
+    }
+}
+
+function renderizarSuporte() {
+    const corpo = document.getElementById("listaChamadosAdmin");
+    const filtro = document.getElementById("filtroSuporte").value;
+    const aba = document.getElementById("tabSuporte");
+    const pend = chamadosAdmin.filter(pendenteSup).length;
+    if (aba) { aba.textContent = pend ? "Suporte (" + pend + ")" : "Suporte"; }
+    const lista = chamadosAdmin.filter(function (c) {
+        if (filtro === "abertos") { return !fechadoSup(c); }
+        if (filtro === "resolvidos") { return fechadoSup(c); }
+        return true;
+    });
+    if (!lista.length) {
+        corpo.innerHTML = '<tr><td colspan="6" class="empty-cell">Nenhum chamado encontrado.</td></tr>';
+        return;
+    }
+    corpo.innerHTML = lista.map(function (c) {
+        const st = c.status || "Aberto";
+        return '<tr class="sup-row" data-chave="' + escSup(c.lojaId + "/" + c.id) + '">' +
+            "<td>" + (pendenteSup(c) ? '<span class="sup-novo" title="Aguardando resposta"></span>' : "") + escSup(c.numero || "—") + "</td>" +
+            "<td>" + escSup(c.lojaNome) + "</td>" +
+            "<td>" + escSup(c.assunto || "(sem assunto)") + "</td>" +
+            "<td>" + escSup(c.categoria || "—") + "</td>" +
+            '<td><span class="sup-pill ' + slugStatusSup(st) + '">' + escSup(st) + "</span></td>" +
+            "<td>" + dataSup(c.ultimaInteracao || c.atualizadoEm || c.criadoEm || c.data) + "</td></tr>";
+    }).join("");
+}
+
+async function abrirChamadoAdmin(chave) {
+    const c = chamadosAdmin.find(function (x) { return x.lojaId + "/" + x.id === chave; });
+    if (!c) { return; }
+    chamadoAdminAtual = c;
+    document.getElementById("supTitulo").textContent = c.assunto || "Chamado";
+    document.getElementById("supMeta").textContent =
+        [c.lojaNome, c.usuario, c.categoria, c.numero ? "Nº " + c.numero : ""].filter(Boolean).join(" · ");
+    document.getElementById("supTexto").value = "";
+    document.getElementById("supAviso").textContent = "";
+    document.getElementById("supStatus").value = fechadoSup(c) ? (c.status || "Resolvido") : "Em atendimento";
+    const m = document.getElementById("modalChamadoAdmin");
+    m.hidden = false;
+    m.classList.add("active");
+    await carregarMensagensSup();
+}
+
+async function carregarMensagensSup() {
+    const c = chamadoAdminAtual;
+    const caixa = document.getElementById("supConversa");
+    caixa.innerHTML = '<div class="empty-history">Carregando conversa...</div>';
+    let msgs = [];
+    try {
+        const snap = await c.ref.collection("mensagens").orderBy("criadoEm").get();
+        msgs = snap.docs.map(function (d) { return d.data(); });
+    } catch (erro) { console.error("Erro ao carregar mensagens:", erro); }
+    // texto inicial do chamado (fica no documento principal)
+    if (c.mensagem && !msgs.some(function (m) { return m.autorTipo === "cliente" && String(m.mensagem || "").trim() === String(c.mensagem).trim(); })) {
+        msgs.unshift({ autorTipo: "cliente", autorNome: c.usuario || "Cliente", mensagem: c.mensagem, criadoEm: c.criadoEm || c.data });
+    }
+    // resposta antiga salva no próprio chamado
+    const antiga = String(c.respostaSuporte || c.resposta || "").trim();
+    if (antiga && !msgs.some(function (m) { return m.autorTipo === "admin" && String(m.mensagem || "").trim() === antiga; })) {
+        msgs.push({ autorTipo: "admin", autorNome: c.respondidoPor || "Suporte Gestok", mensagem: antiga, criadoEm: c.ultimaResposta || c.atualizadoEm });
+    }
+    caixa.innerHTML = msgs.length ? msgs.map(function (m) {
+        const adm = m.autorTipo === "admin";
+        return '<div class="sup-msg ' + (adm ? "admin" : "cliente") + '"><small>' +
+            escSup(m.autorNome || (adm ? "Suporte Gestok" : "Cliente")) + " · " + dataSup(m.criadoEm) +
+            "</small>" + escSup(m.mensagem) + "</div>";
+    }).join("") : '<div class="empty-history">Sem mensagens.</div>';
+    caixa.scrollTop = caixa.scrollHeight;
+}
+
+async function salvarSuporte(comResposta) {
+    const c = chamadoAdminAtual;
+    const aviso = document.getElementById("supAviso");
+    const texto = document.getElementById("supTexto").value.trim();
+    const status = document.getElementById("supStatus").value;
+    if (!c) { return; }
+    if (comResposta && !texto) {
+        aviso.textContent = "Escreva a resposta antes de enviar.";
+        aviso.className = "send-status error";
+        return;
+    }
+    const botoes = [document.getElementById("supEnviar"), document.getElementById("supSoStatus")];
+    botoes.forEach(function (b) { b.disabled = true; });
+    try {
+        const agora = firebase.firestore.Timestamp.now();
+        const usuario = auth.currentUser || {};
+        const alteracoes = { status: status, atualizadoEm: agora };
+        if (comResposta) {
+            await c.ref.collection("mensagens").add({
+                autorTipo: "admin",
+                autorUid: usuario.uid || null,
+                autorNome: "Suporte Gestok",
+                autorEmail: usuario.email || "",
+                mensagem: texto,
+                criadoEm: agora
+            });
+            Object.assign(alteracoes, {
+                ultimaMensagem: texto,
+                ultimaMensagemAutor: "admin",
+                ultimaInteracao: agora,
+                ultimaResposta: agora,
+                respondidoPor: "Suporte Gestok"
+            });
+        }
+        await c.ref.update(alteracoes);
+        Object.assign(c, alteracoes);
+        document.getElementById("supTexto").value = "";
+        aviso.textContent = comResposta ? "Resposta enviada." : "Status atualizado.";
+        aviso.className = "send-status success";
+        chamadosAdmin.sort(function (a, b) { return tsSup(b) - tsSup(a); });
+        renderizarSuporte();
+        await carregarMensagensSup();
+    } catch (erro) {
+        console.error("Erro ao salvar chamado:", erro);
+        aviso.textContent = "Não foi possível salvar. Verifique as regras do Firestore.";
+        aviso.className = "send-status error";
+    } finally {
+        botoes.forEach(function (b) { b.disabled = false; });
+    }
+}
+
+(function iniciarSuporteAdmin() {
+    const g = function (id) { return document.getElementById(id); };
+    g("listaChamadosAdmin").addEventListener("click", function (e) {
+        const tr = e.target.closest("tr[data-chave]");
+        if (tr) { abrirChamadoAdmin(tr.dataset.chave); }
+    });
+    g("filtroSuporte").addEventListener("change", renderizarSuporte);
+    g("btnAtualizarSuporte").addEventListener("click", carregarSuporte);
+    g("supEnviar").addEventListener("click", function () { salvarSuporte(true); });
+    g("supSoStatus").addEventListener("click", function () { salvarSuporte(false); });
+    g("supFechar").addEventListener("click", function () { g("modalChamadoAdmin").classList.remove("active"); });
+    g("modalChamadoAdmin").addEventListener("click", function (e) {
+        if (e.target === this) { this.classList.remove("active"); }
+    });
+})();
