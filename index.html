@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Gestok | Administração</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+
+<body>
+
+    <!-- =====================================================
+         LOGIN
+    ====================================================== -->
+
+    <section
+        class="login-screen"
+        id="loginView"
+    >
+
+        <div class="login-card">
+
+            <div class="login-logo">
+                G
+            </div>
+
+            <h1>
+                Gestok
+            </h1>
+
+            <p class="login-subtitle">
+                Painel administrativo
+            </p>
+
+
+            <form id="loginForm">
+
+                <div class="form-group">
+
+                    <label for="loginEmail">
+                        E-mail
+                    </label>
+
+                    <input
+                        type="email"
+                        id="loginEmail"
+                        placeholder="Digite seu e-mail"
+                        autocomplete="username"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="loginSenha">
+                        Senha
+                    </label>
+
+                    <input
+                        type="password"
+                        id="loginSenha"
+                        placeholder="Digite sua senha"
+                        autocomplete="current-password"
+                        required
+                    >
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="login-button"
+                    id="btnLogin"
+                >
+                    Entrar
+                </button>
+
+
+                <div
+                    class="login-status"
+                    id="loginStatus"
+                ></div>
+
+            </form>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         PAINEL ADMINISTRATIVO
+    ====================================================== -->
+
+    <section
+        class="admin-view"
+        id="adminView"
+        hidden
+    >
+
+        <!-- HEADER -->
+
+        <header class="admin-header">
+
+            <div class="admin-brand">
+
+                <div class="admin-brand-icon">
+                    G
+                </div>
+
+                <div>
+
+                    <strong>
+                        Gestok
+                    </strong>
+
+                    <span>
+                        Administração
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="admin-account">
+
+                <div class="admin-account-info">
+
+                    <strong id="adminNome">
+                        Administrador
+                    </strong>
+
+                    <span id="adminEmail">
+                        —
+                    </span>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="logout-button"
+                    id="btnSair"
+                >
+                    Sair
+                </button>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- CONTEÚDO -->
+
+        <main class="admin-content">
+
+
+            <!-- =================================================
+                 ABAS
+            ================================================== -->
+
+            <div class="admin-tabs">
+
+                <button
+                    type="button"
+                    class="admin-tab active"
+                    data-tab="lojas"
+                    id="tabLojas"
+                >
+                    Lojas
+                </button>
+
+
+                <button
+                    type="button"
+                    class="admin-tab"
+                    data-tab="notificacoes"
+                    id="tabNotificacoes"
+                >
+                    Notificações
+                </button>
+
+            </div>
+
+
+
+            <!-- =================================================
+                 ABA LOJAS
+            ================================================== -->
+
+            <section
+                class="tab-content active"
+                id="tabContentLojas"
+            >
+
+                <div class="page-header">
+
+                    <div>
+
+                        <span class="eyebrow">
+                            ADMINISTRAÇÃO
+                        </span>
+
+                        <h1>
+                            Lojas
+                        </h1>
+
+                        <p>
+                            Consulte todas as lojas cadastradas no Gestok.
+                        </p>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="refresh-button"
+                        id="btnAtualizar"
+                    >
+                        ↻ Atualizar
+                    </button>
+
+                </div>
+
+
+
+                <!-- ESTATÍSTICAS -->
+
+                <div class="stats-grid">
+
+                    <div class="stat-card">
+
+                        <span>
+                            Total de lojas
+                        </span>
+
+                        <strong id="totalLojas">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <span>
+                            Lojas ativas
+                        </span>
+
+                        <strong id="lojasAtivas">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <span>
+                            Aguardando pagamento
+                        </span>
+
+                        <strong id="lojasPagamento">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <span>
+                            Total de produtos
+                        </span>
+
+                        <strong id="totalProdutos">
+                            0
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- FILTROS -->
+
+                <div class="panel">
+
+                    <div class="filter-grid">
+
+                        <input
+                            type="text"
+                            id="campoBusca"
+                            placeholder="Buscar por nome, código ou e-mail..."
+                        >
+
+
+                        <select id="filtroStatus">
+
+                            <option value="">
+                                Todos os status
+                            </option>
+
+                            <option value="ativa">
+                                Ativas
+                            </option>
+
+                            <option value="pagamento">
+                                Aguardando pagamento
+                            </option>
+
+                            <option value="inativa">
+                                Inativas
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- TABELA -->
+
+                <div class="panel table-panel">
+
+                    <div class="panel-header">
+
+                        <div>
+
+                            <h2>
+                                Lista de lojas
+                            </h2>
+
+                            <span id="statusCarregamento">
+                                —
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="table-wrapper">
+
+                        <table>
+
+                            <thead>
+
+                                <tr>
+
+                                    <th>
+                                        Loja
+                                    </th>
+
+                                    <th>
+                                        Código
+                                    </th>
+
+                                    <th>
+                                        Usuário
+                                    </th>
+
+                                    <th>
+                                        E-mail
+                                    </th>
+
+                                    <th>
+                                        Produtos
+                                    </th>
+
+                                    <th>
+                                        Status
+                                    </th>
+
+                                    <th>
+                                        Ação
+                                    </th>
+
+                                </tr>
+
+                            </thead>
+
+
+                            <tbody id="listaLojas">
+
+                                <tr>
+
+                                    <td
+                                        colspan="7"
+                                        class="empty-cell"
+                                    >
+                                        Carregando lojas...
+                                    </td>
+
+                                </tr>
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =================================================
+                 ABA NOTIFICAÇÕES
+            ================================================== -->
+
+            <section
+                class="tab-content"
+                id="tabContentNotificacoes"
+            >
+
+                <div class="page-header">
+
+                    <div>
+
+                        <span class="eyebrow">
+                            COMUNICAÇÃO
+                        </span>
+
+                        <h1>
+                            Notificações
+                        </h1>
+
+                        <p>
+                            Envie avisos para as lojas do Gestok.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- RESUMO -->
+
+                <div class="stats-grid notification-stats">
+
+                    <div class="stat-card">
+
+                        <span>
+                            Total enviadas
+                        </span>
+
+                        <strong id="totalNotificacoes">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <span>
+                            Para todas as lojas
+                        </span>
+
+                        <strong id="notificacoesTodas">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <span>
+                            Ativas
+                        </span>
+
+                        <strong id="notificacoesAtivas">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <span>
+                            Última notificação
+                        </span>
+
+                        <strong
+                            id="ultimaNotificacao"
+                            class="small-stat"
+                        >
+                            —
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- FORMULÁRIO -->
+
+                <div class="panel notification-form-panel">
+
+                    <div class="panel-header">
+
+                        <div>
+
+                            <h2>
+                                Enviar notificação
+                            </h2>
+
+                            <span>
+                                A mensagem será disponibilizada no sino do Gestok.
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <form id="formNotificacao">
+
+                        <div class="form-grid">
+
+                            <div class="form-group">
+
+                                <label for="tituloNotificacao">
+                                    Título
+                                </label>
+
+                                <input
+                                    type="text"
+                                    id="tituloNotificacao"
+                                    maxlength="80"
+                                    placeholder="Ex.: Atualização do sistema"
+                                    required
+                                >
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="tipoNotificacao">
+                                    Tipo
+                                </label>
+
+                                <select id="tipoNotificacao">
+
+                                    <option value="informativa">
+                                        Informativa
+                                    </option>
+
+                                    <option value="aviso">
+                                        Aviso
+                                    </option>
+
+                                    <option value="urgente">
+                                        Urgente
+                                    </option>
+
+                                    <option value="atualizacao">
+                                        Atualização
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="mensagemNotificacao">
+                                Mensagem
+                            </label>
+
+                            <textarea
+                                id="mensagemNotificacao"
+                                maxlength="500"
+                                placeholder="Digite a mensagem que será exibida para as lojas..."
+                                required
+                            ></textarea>
+
+
+                            <div class="character-counter">
+
+                                <span id="contadorMensagem">
+                                    0 / 500
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+
+                        <div class="notification-destination">
+
+                            <div class="destination-icon">
+                                ✓
+                            </div>
+
+                            <div>
+
+                                <strong>
+                                    Todas as lojas
+                                </strong>
+
+                                <span>
+                                    A notificação ficará disponível para todas as contas do Gestok.
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <button
+                            type="submit"
+                            class="send-button"
+                            id="btnEnviarNotificacao"
+                        >
+                            Enviar notificação
+                        </button>
+
+
+                        <div
+                            class="send-status"
+                            id="statusEnvio"
+                        ></div>
+
+                    </form>
+
+                </div>
+
+
+
+                <!-- HISTÓRICO -->
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+
+                            <h2>
+                                Histórico
+                            </h2>
+
+                            <span id="statusNotificacoes">
+                                Carregando...
+                            </span>
+
+                        </div>
+
+                        <span
+                            class="history-count"
+                            id="contadorNotificacoes"
+                        >
+                            0
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        class="notifications-history"
+                        id="listaNotificacoes"
+                    >
+
+                        <div class="empty-history">
+                            Carregando notificações...
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         MODAL DA LOJA
+    ====================================================== -->
+
+    <div
+        class="modal-overlay"
+        id="modalLoja"
+        hidden
+    >
+
+        <div class="modal">
+
+            <div class="modal-header">
+
+                <div>
+
+                    <span>
+                        DETALHES DA LOJA
+                    </span>
+
+                    <h2 id="modalNomeLoja">
+                        —
+                    </h2>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="modal-close"
+                    id="fecharModal"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <div class="modal-body">
+
+                <div class="detail-grid">
+
+                    <div class="detail-item">
+
+                        <span>
+                            Código
+                        </span>
+
+                        <strong id="modalCodigo">
+                            —
+                        </strong>
+
+                    </div>
+
+
+                    <div class="detail-item">
+
+                        <span>
+                            Usuário
+                        </span>
+
+                        <strong id="modalUsuario">
+                            —
+                        </strong>
+
+                    </div>
+
+
+                    <div class="detail-item">
+
+                        <span>
+                            E-mail
+                        </span>
+
+                        <strong id="modalEmail">
+                            —
+                        </strong>
+
+                    </div>
+
+
+                    <div class="detail-item">
+
+                        <span>
+                            Produtos
+                        </span>
+
+                        <strong id="modalProdutos">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="detail-item">
+
+                        <span>
+                            Usuários
+                        </span>
+
+                        <strong id="modalUsuarios">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="detail-item">
+
+                        <span>
+                            Movimentações
+                        </span>
+
+                        <strong id="modalMovimentacoes">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="detail-item">
+
+                        <span>
+                            Plano
+                        </span>
+
+                        <strong id="modalPlano">
+                            —
+                        </strong>
+
+                    </div>
+
+
+                    <div class="detail-item">
+
+                        <span>
+                            Status
+                        </span>
+
+                        <strong id="modalStatus">
+                            —
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         FIREBASE
+    ====================================================== -->
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
+
+    <script>
+
+        const firebaseConfig = {
+
+            apiKey:
+                "AIzaSyBe-vJ4FVoGHbIWGTRJevsD2wWztITyNU",
+
+            authDomain:
+                "gestok-3bce2.firebaseapp.com",
+
+            projectId:
+                "gestok-3bce2",
+
+            storageBucket:
+                "gestok-3bce2.firebasestorage.app",
+
+            messagingSenderId:
+                "666747184098",
+
+            appId:
+                "1:666747184098:web:383688a3c974c00ff30fbb",
+
+            measurementId:
+                "G-DP56ENDWDV"
+
+        };
+
+
+        if (!firebase.apps.length) {
+
+            firebase.initializeApp(
+                firebaseConfig
+            );
+
+        }
+
+    </script>
+
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
