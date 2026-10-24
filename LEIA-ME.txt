@@ -1,0 +1,26 @@
+FUNÇÃO "excluirContaGestok" — apaga a loja E o login do cliente
+================================================================
+
+O que faz: quando você clica em "Excluir conta" no painel admin, esta função apaga
+os dados da loja, os registros de acesso e o login do cliente no Authentication.
+Só funciona para administradores (documento admins/{uid} ativo). Nunca apaga admin.
+
+ANTES DE COMEÇAR
+- Cloud Functions exigem o plano Blaze (pague-conforme-o-uso) no Firebase. Se você já usa
+  funções de pagamento no projeto, você já tem. Para este uso o custo é praticamente zero.
+- Instale o Node.js (https://nodejs.org) e, no terminal:  npm install -g firebase-tools
+
+PASSO A PASSO (Windows: abra o terminal dentro desta pasta; na barra de endereço digite cmd)
+1) firebase login
+2) cd functions
+3) npm install
+4) cd ..
+5) firebase deploy --only functions:excluir-conta
+
+Se o terminal perguntar se deseja APAGAR outras funções, responda NÃO (N).
+Esta pasta usa um "codebase" separado (excluir-conta), então as suas outras funções
+(como as de pagamento) não são alteradas.
+
+DEPOIS
+- Use o admin atualizado (admin-com-exclusao.zip) e teste com uma loja de teste.
+- O painel mostra "Loja excluída com sucesso" quando o login também foi removido.

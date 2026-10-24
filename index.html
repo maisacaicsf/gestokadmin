@@ -22,6 +22,7 @@
 
 <body>
 
+
     <!-- =====================================================
          LOGIN
     ====================================================== -->
@@ -114,7 +115,10 @@
         hidden
     >
 
-        <!-- HEADER -->
+
+        <!-- =================================================
+             HEADER
+        ================================================== -->
 
         <header class="admin-header">
 
@@ -168,7 +172,9 @@
 
 
 
-        <!-- CONTEÚDO -->
+        <!-- =================================================
+             CONTEÚDO
+        ================================================== -->
 
         <main class="admin-content">
 
@@ -197,6 +203,8 @@
                 >
                     Notificações
                 </button>
+
+
                 <button
                     type="button"
                     class="admin-tab"
@@ -686,12 +694,26 @@
 
                         </div>
 
-                        <span
-                            class="history-count"
-                            id="contadorNotificacoes"
+                        <div
+                            class="history-actions"
                         >
-                            0
-                        </span>
+
+                            <span
+                                class="history-count"
+                                id="contadorNotificacoes"
+                            >
+                                0
+                            </span>
+
+                            <button
+                                type="button"
+                                class="clear-notifications-button"
+                                id="btnLimparNotificacoes"
+                            >
+                                Limpar todas
+                            </button>
+
+                        </div>
 
                     </div>
 
@@ -711,68 +733,181 @@
 
             </section>
 
-            <!-- ABA SUPORTE -->
-            <section class="tab-content" id="tabContentSuporte">
+
+
+            <!-- =================================================
+                 ABA SUPORTE
+            ================================================== -->
+
+            <section
+                class="tab-content"
+                id="tabContentSuporte"
+            >
+
                 <div class="page-header">
+
                     <div>
-                        <span class="eyebrow">ATENDIMENTO</span>
-                        <h1>Suporte</h1>
-                        <p>Responda os chamados abertos pelas lojas do Gestok.</p>
-                    </div>
-                </div>
-                <div class="panel table-panel">
-                    <div class="panel-header">
-                        <div class="sup-toolbar">
-                            <select id="filtroSuporte">
-                                <option value="abertos">Em aberto</option>
-                                <option value="resolvidos">Resolvidos / fechados</option>
-                                <option value="todos">Todos</option>
-                            </select>
-                            <button type="button" class="send-button" id="btnAtualizarSuporte">Atualizar</button>
-                            <span id="statusSuporte" class="send-status"></span>
-                        </div>
-                    </div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Nº</th><th>Loja</th><th>Assunto</th><th>Categoria</th><th>Status</th><th>Última atividade</th>
-                                </tr>
-                            </thead>
-                            <tbody id="listaChamadosAdmin"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-        </main>
 
-    <!-- MODAL DO CHAMADO -->
-    <div class="modal-overlay" id="modalChamadoAdmin" hidden>
-        <div class="modal sup-modal">
-            <div class="modal-header">
-                <div>
-                    <h2 id="supTitulo">Chamado</h2>
-                    <p id="supMeta"></p>
+                        <span class="eyebrow">
+                            ATENDIMENTO
+                        </span>
+
+                        <h1>
+                            Suporte
+                        </h1>
+
+                        <p>
+                            Gerencie os chamados enviados pelas lojas do Gestok.
+                        </p>
+
+                    </div>
+
                 </div>
-                <button type="button" class="modal-close" id="supFechar">×</button>
-            </div>
-            <div class="modal-body">
-                <div class="sup-conversa" id="supConversa"></div>
-                <div class="sup-resposta">
-                    <textarea id="supTexto" maxlength="2000" placeholder="Escreva a resposta para o cliente..."></textarea>
-                    <div class="sup-acoes">
-                        <select id="supStatus">
-                            <option>Aberto</option><option>Em atendimento</option><option>Resolvido</option><option>Fechado</option>
+
+
+
+                <!-- RESUMO DOS CHAMADOS -->
+
+                <div class="stats-grid">
+
+                    <div class="stat-card">
+
+                        <span>
+                            Total de chamados
+                        </span>
+
+                        <strong id="totalChamadosAdmin">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <span>
+                            Abertos
+                        </span>
+
+                        <strong id="chamadosAbertosAdmin">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <span>
+                            Em atendimento
+                        </span>
+
+                        <strong id="chamadosAtendimentoAdmin">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <span>
+                            Resolvidos
+                        </span>
+
+                        <strong id="chamadosResolvidosAdmin">
+                            0
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- FILTROS DE SUPORTE -->
+
+                <div class="panel">
+
+                    <div class="filter-grid">
+
+                        <input
+                            type="text"
+                            id="campoBuscaChamados"
+                            placeholder="Buscar por chamado, loja ou assunto..."
+                        >
+
+
+                        <select
+                            id="filtroStatusChamados"
+                        >
+
+                            <option value="">
+                                Todos os status
+                            </option>
+
+                            <option value="Aberto">
+                                Aberto
+                            </option>
+
+                            <option value="Em atendimento">
+                                Em atendimento
+                            </option>
+
+                            <option value="Resolvido">
+                                Resolvido
+                            </option>
+
+                            <option value="Fechado">
+                                Fechado
+                            </option>
+
                         </select>
-                        <button type="button" class="send-button" id="supEnviar">Enviar resposta</button>
-                        <button type="button" class="sup-sec" id="supSoStatus">Só atualizar status</button>
-                        <span id="supAviso" class="send-status"></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
+                    </div>
+
+                </div>
+
+
+
+                <!-- LISTA DE CHAMADOS -->
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+
+                            <h2>
+                                Chamados
+                            </h2>
+
+                            <span id="statusChamadosAdmin">
+                                Aguardando...
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="notifications-history"
+                        id="listaChamadosAdmin"
+                    >
+
+                        <div class="empty-history">
+                            Nenhum chamado carregado.
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+        </main>
 
     </section>
 
@@ -831,7 +966,31 @@
                         </strong>
 
                     </div>
+                    <div
+                        style="
+                            margin-top: 24px;
+                            padding-top: 20px;
+                            border-top: 1px solid #e5e7eb;
+                        "
+                    >
+                        <button
+                            type="button"
+                            id="excluirContaBtn"
+                            class="delete-account-button"
+                        >
+                            Excluir conta
+                        </button>
 
+                        <p
+                            style="
+                                margin: 8px 0 0;
+                                font-size: 13px;
+                                color: #6b7280;
+                            "
+                        >
+                            Essa ação excluirá permanentemente a loja e os dados vinculados.
+                        </p>
+                    </div>
 
                     <div class="detail-item">
 
@@ -942,37 +1101,28 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
 
     <script>
 
-        const firebaseConfig = {
-
-            apiKey:
-                "AIzaSyBe-v8J4VFoGHbIWGTRJevsD2wWztITyNU",
-
-            authDomain:
-                "gestok-3bce2.firebaseapp.com",
-
-            projectId:
-                "gestok-3bce2",
-
-            storageBucket:
-                "gestok-3bce2.firebasestorage.app",
-
-            messagingSenderId:
-                "666747184098",
-
-            appId:
-                "1:666747184098:web:383688a3c974c00ff30fbb",
-
-            measurementId:
-                "G-DP56ENDWDV"
-
-        };
+    const firebaseConfig = {
+    apiKey: "AIzaSyBe-v8J4VFoGHbIWGTRJevsD2wWztITyNU",
+    authDomain: "gestok-3bce2.firebaseapp.com",
+    projectId: "gestok-3bce2",
+    storageBucket: "gestok-3bce2.firebasestorage.app",
+    messagingSenderId: "666747184098",
+    appId: "1:666747184098:web:383688a3c974c00ff30fbb",
+    measurementId: "G-DP56ENDWDV"
+    };
 
 
-        if (!firebase.apps.length) {
+        if (
+            typeof firebase !== "undefined" &&
+            !firebase.apps.length
+        ) {
 
             firebase.initializeApp(
                 firebaseConfig
@@ -983,7 +1133,12 @@
     </script>
 
 
+    <!-- =====================================================
+         SCRIPT ADMIN
+    ====================================================== -->
+
     <script src="script.js"></script>
+
 
 </body>
 

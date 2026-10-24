@@ -65,7 +65,6 @@ body {
 
 /* =====================================================
    HIDDEN
-   IMPORTANTE PARA LOGIN / MODAL
 ===================================================== */
 
 [hidden] {
@@ -1389,22 +1388,12 @@ td strong {
 }
 
 
-/*
-   SOMENTE aparece quando o JavaScript
-   adiciona a classe .active
-*/
-
 .modal-overlay.active {
 
     display: flex;
 
 }
 
-
-/*
-   Garantia adicional:
-   hidden nunca permite que o modal apareça.
-*/
 
 .modal-overlay[hidden] {
 
@@ -1421,6 +1410,10 @@ td strong {
             100%
         );
 
+    max-width: 100%;
+
+    max-height: 92vh;
+
     background:
         #ffffff;
 
@@ -1431,7 +1424,8 @@ td strong {
         0 25px 70px
         rgba(15,23,42,.20);
 
-    overflow: hidden;
+    overflow:
+        hidden;
 }
 
 
@@ -1461,6 +1455,8 @@ td strong {
     flex-direction: column;
 
     gap: 4px;
+
+    min-width: 0;
 }
 
 
@@ -1480,6 +1476,10 @@ td strong {
 .modal-header h2 {
 
     font-size: 18px;
+
+    line-height: 1.3;
+
+    overflow-wrap: anywhere;
 }
 
 
@@ -1488,6 +1488,8 @@ td strong {
     width: 32px;
 
     height: 32px;
+
+    flex-shrink: 0;
 
     border: 0;
 
@@ -1502,6 +1504,12 @@ td strong {
     cursor: pointer;
 
     font-size: 20px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
 }
 
 
@@ -1516,6 +1524,10 @@ td strong {
 
     padding:
         20px;
+
+    min-width: 0;
+
+    overflow-y: auto;
 }
 
 
@@ -1563,6 +1575,984 @@ td strong {
 
 
 /* =====================================================
+   AÇÕES DO HISTÓRICO
+===================================================== */
+
+.history-actions {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+}
+
+
+.clear-notifications-button {
+
+    border:
+        1px solid
+        #f1caca;
+
+    background:
+        #fff5f5;
+
+    color:
+        #d94747;
+
+    padding:
+        8px 11px;
+
+    border-radius:
+        8px;
+
+    font-size:
+        9px;
+
+    font-weight:
+        700;
+
+    cursor:
+        pointer;
+
+    transition:
+        background .18s,
+        border-color .18s;
+}
+
+
+.clear-notifications-button:hover {
+
+    background:
+        #ffecec;
+
+    border-color:
+        #e8b5b5;
+}
+
+
+.clear-notifications-button:disabled {
+
+    opacity: .55;
+
+    cursor: wait;
+
+}
+
+
+/* =====================================================
+   SUPORTE - CHAMADOS ADMIN
+===================================================== */
+
+.support-admin-card {
+
+    padding: 16px;
+
+    border:
+        1px solid
+        #edf0f4;
+
+    border-radius:
+        12px;
+
+    background:
+        #ffffff;
+
+    box-shadow:
+        0 3px 12px
+        rgba(20, 30, 50, .04);
+}
+
+
+.support-admin-card + .support-admin-card {
+
+    margin-top: 10px;
+
+}
+
+
+.support-admin-card-top {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    justify-content: space-between;
+
+    gap: 15px;
+
+    margin-bottom: 12px;
+
+}
+
+
+.support-admin-card-top > div {
+
+    min-width: 0;
+
+}
+
+
+.support-admin-card-top small {
+
+    display: block;
+
+    margin-bottom: 4px;
+
+    color:
+        var(--text-light);
+
+    font-size: 9px;
+
+    font-weight: 700;
+
+}
+
+
+.support-admin-card-top h3 {
+
+    font-size: 14px;
+
+    color:
+        var(--text);
+
+    line-height: 1.35;
+
+}
+
+
+.support-admin-meta {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 8px;
+
+    margin-bottom: 13px;
+
+}
+
+
+.support-admin-meta span {
+
+    padding: 9px 10px;
+
+    border-radius: 8px;
+
+    background:
+        #f8fafc;
+
+    color:
+        var(--text-secondary);
+
+    font-size: 9px;
+
+    line-height: 1.4;
+
+}
+
+
+.support-admin-meta strong {
+
+    color:
+        var(--text);
+
+}
+
+
+.support-admin-message {
+
+    padding: 12px;
+
+    margin-bottom: 12px;
+
+    border-radius: 9px;
+
+    background:
+        #f8fafc;
+
+    border:
+        1px solid
+        #edf0f4;
+
+}
+
+
+.support-admin-message strong,
+.support-admin-response-old strong {
+
+    display: block;
+
+    margin-bottom: 6px;
+
+    font-size: 10px;
+
+}
+
+
+.support-admin-message p,
+.support-admin-response-old p {
+
+    color:
+        var(--text-secondary);
+
+    font-size: 10px;
+
+    line-height: 1.55;
+
+    white-space: pre-wrap;
+
+    word-break: break-word;
+
+}
+
+
+.support-admin-response-old {
+
+    padding: 12px;
+
+    margin-bottom: 12px;
+
+    border-radius: 9px;
+
+    background:
+        #f1f7ff;
+
+    border:
+        1px solid
+        #dceaff;
+
+}
+
+
+.support-admin-response-old strong {
+
+    color:
+        var(--primary);
+
+}
+
+
+.support-admin-response-old small {
+
+    display: block;
+
+    margin-top: 7px;
+
+    color:
+        var(--text-light);
+
+    font-size: 9px;
+
+}
+
+
+.support-admin-actions {
+
+    display: grid;
+
+    grid-template-columns:
+        190px 1fr auto;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding-top: 12px;
+
+    border-top:
+        1px solid
+        #edf0f4;
+
+}
+
+
+.support-admin-actions label {
+
+    display: none;
+
+}
+
+
+.status-chamado-admin {
+
+    height: 40px;
+
+    padding:
+        0 11px;
+
+    border:
+        1px solid
+        #dfe5ec;
+
+    border-radius:
+        8px;
+
+    background:
+        #ffffff;
+
+    color:
+        var(--text);
+
+    outline: none;
+
+    font-family: inherit;
+
+    font-size: 10px;
+
+    cursor: pointer;
+
+}
+
+
+.status-chamado-admin:focus {
+
+    border-color:
+        var(--primary);
+
+    box-shadow:
+        0 0 0 3px
+        rgba(52,120,229,.10);
+
+}
+
+
+.resposta-chamado-admin {
+
+    width: 100%;
+
+    min-height: 40px;
+
+    height: 40px;
+
+    padding:
+        10px 11px;
+
+    resize: vertical;
+
+    border:
+        1px solid
+        #dfe5ec;
+
+    border-radius:
+        8px;
+
+    background:
+        #ffffff;
+
+    color:
+        var(--text);
+
+    outline: none;
+
+    font-family: inherit;
+
+    font-size: 10px;
+
+    line-height: 1.4;
+
+}
+
+
+.resposta-chamado-admin:focus {
+
+    border-color:
+        var(--primary);
+
+    box-shadow:
+        0 0 0 3px
+        rgba(52,120,229,.10);
+
+}
+
+
+.btn-responder-chamado-admin {
+
+    min-height: 40px;
+
+    border: 0;
+
+    padding:
+        0 14px;
+
+    border-radius:
+        8px;
+
+    background:
+        var(--primary);
+
+    color:
+        #ffffff;
+
+    font-family: inherit;
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    white-space: nowrap;
+
+    transition:
+        background .18s,
+        opacity .18s;
+}
+
+
+.btn-responder-chamado-admin:hover {
+
+    background:
+        var(--primary-dark);
+
+}
+
+
+.btn-responder-chamado-admin:disabled {
+
+    opacity: .6;
+
+    cursor: wait;
+
+}
+
+
+/* =====================================================
+   BOTÃO VER CONVERSA
+===================================================== */
+
+.support-admin-conversation-button {
+
+    display: inline-flex;
+
+    align-items: center;
+
+}
+
+
+.btn-abrir-conversa-admin {
+
+    border: 0;
+
+    background:
+        #edf4ff;
+
+    color:
+        var(--primary);
+
+    border-radius:
+        7px;
+
+    padding:
+        7px 10px;
+
+    cursor:
+        pointer;
+
+    font-size:
+        9px;
+
+    font-weight:
+        700;
+
+    margin-right:
+        6px;
+
+    transition:
+        background .18s,
+        color .18s;
+}
+
+
+.btn-abrir-conversa-admin:hover {
+
+    background:
+        #dfeaff;
+
+    color:
+        var(--primary-dark);
+}
+
+
+/* =====================================================
+   MODAL DE CONVERSA
+===================================================== */
+
+.admin-conversation-modal {
+
+    width:
+        min(
+            760px,
+            100%
+        );
+
+    max-width:
+        100%;
+
+    max-height:
+        92vh;
+
+    overflow:
+        hidden;
+}
+
+
+.admin-conversation-modal .modal-body {
+
+    max-height:
+        calc(92vh - 90px);
+
+    overflow-y:
+        auto;
+
+    padding:
+        18px 20px 20px;
+}
+
+
+.admin-conversation-info {
+
+    width:
+        100%;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    gap:
+        12px;
+
+    margin-bottom:
+        12px;
+
+    padding:
+        10px 12px;
+
+    border-radius:
+        9px;
+
+    background:
+        #f8fafc;
+
+    border:
+        1px solid
+        #edf0f4;
+
+    color:
+        var(--text-secondary);
+
+    font-size:
+        10px;
+
+    line-height:
+        1.4;
+}
+
+
+.admin-conversation-info strong {
+
+    color:
+        var(--text);
+
+    font-size:
+        10px;
+}
+
+
+.admin-conversation-info span {
+
+    color:
+        var(--text-light);
+
+    font-size:
+        9px;
+
+    text-align:
+        right;
+
+    overflow-wrap:
+        anywhere;
+}
+
+
+/* =====================================================
+   ÁREA DA CONVERSA
+===================================================== */
+
+.admin-conversation-modal .ticket-conversation {
+
+    width:
+        100%;
+
+    max-height:
+        390px;
+
+    min-height:
+        140px;
+
+    overflow-y:
+        auto;
+
+    overflow-x:
+        hidden;
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    gap:
+        10px;
+
+    padding:
+        7px;
+
+    border:
+        1px solid
+        #edf0f4;
+
+    border-radius:
+        11px;
+
+    background:
+        #fbfcfe;
+
+    scroll-behavior:
+        smooth;
+}
+
+
+.admin-conversation-modal .conversation-message {
+
+    width:
+        fit-content;
+
+    max-width:
+        86%;
+
+    padding:
+        11px 13px;
+
+    border-radius:
+        11px;
+
+    border:
+        1px solid
+        #e7ebf0;
+
+    background:
+        #f8fafc;
+
+    box-shadow:
+        0 1px 2px
+        rgba(15,23,42,.03);
+
+    overflow-wrap:
+        anywhere;
+}
+
+
+.admin-conversation-modal .conversation-message.cliente {
+
+    align-self:
+        flex-start;
+
+    background:
+        #f8fafc;
+
+    border-color:
+        #e7ebf0;
+}
+
+
+.admin-conversation-modal .conversation-message.admin {
+
+    align-self:
+        flex-end;
+
+    background:
+        #edf4ff;
+
+    border-color:
+        #dceaff;
+}
+
+
+.admin-conversation-modal .conversation-message-top {
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    gap:
+        12px;
+
+    margin-bottom:
+        5px;
+
+    flex-wrap:
+        wrap;
+}
+
+
+.admin-conversation-modal .conversation-message-top strong {
+
+    font-size:
+        10px;
+
+    color:
+        #1f2937;
+}
+
+
+.admin-conversation-modal .conversation-message.cliente
+.conversation-message-top strong {
+
+    color:
+        #697382;
+}
+
+
+.admin-conversation-modal .conversation-message.admin
+.conversation-message-top strong {
+
+    color:
+        var(--primary);
+}
+
+
+.admin-conversation-modal .conversation-message-top span {
+
+    font-size:
+        8px;
+
+    color:
+        #9ba4b1;
+
+    white-space:
+        nowrap;
+}
+
+
+.admin-conversation-modal .conversation-message p {
+
+    margin:
+        0;
+
+    font-size:
+        10px;
+
+    line-height:
+        1.5;
+
+    color:
+        #5f6977;
+
+    white-space:
+        pre-wrap;
+
+    word-break:
+        break-word;
+}
+
+
+.admin-conversation-modal .conversation-empty {
+
+    width:
+        100%;
+
+    padding:
+        25px;
+
+    text-align:
+        center;
+
+    color:
+        #9ba4b1;
+
+    font-size:
+        10px;
+
+    line-height:
+        1.5;
+}
+
+
+/* =====================================================
+   RESPOSTA DO ADMIN NA CONVERSA
+===================================================== */
+
+.admin-conversation-reply {
+
+    width:
+        100%;
+
+    display:
+        grid;
+
+    grid-template-columns:
+        180px 1fr auto;
+
+    align-items:
+        center;
+
+    gap:
+        9px;
+
+    margin-top:
+        12px;
+}
+
+
+.admin-conversation-reply .status-chamado-admin {
+
+    width:
+        100%;
+
+    height:
+        42px;
+}
+
+
+.admin-conversation-reply .resposta-chamado-admin {
+
+    width:
+        100%;
+
+    height:
+        42px;
+
+    min-height:
+        42px;
+
+    max-height:
+        180px;
+}
+
+
+.admin-conversation-reply
+.btn-responder-chamado-admin {
+
+    height:
+        42px;
+
+    min-height:
+        42px;
+}
+
+
+/* =====================================================
+   STATUS DOS CHAMADOS
+===================================================== */
+
+.status-pill.aberto {
+
+    color:
+        #2563d3;
+
+    background:
+        #edf4ff;
+}
+
+
+.status-pill.atendimento {
+
+    color:
+        #c87510;
+
+    background:
+        #fff3df;
+}
+
+
+.status-pill.analise {
+
+    color:
+        #7b45c7;
+
+    background:
+        #f2edff;
+}
+
+
+.status-pill.resolvido {
+
+    color:
+        #159957;
+
+    background:
+        #e9f9f0;
+}
+
+
+.status-pill.fechado {
+
+    color:
+        #747d88;
+
+    background:
+        #eef1f4;
+}
+
+
+/* =====================================================
+   SCROLLBAR
+===================================================== */
+
+.modal-body::-webkit-scrollbar,
+.admin-conversation-modal
+.ticket-conversation::-webkit-scrollbar {
+
+    width:
+        5px;
+}
+
+
+.modal-body::-webkit-scrollbar-track,
+.admin-conversation-modal
+.ticket-conversation::-webkit-scrollbar-track {
+
+    background:
+        transparent;
+}
+
+
+.modal-body::-webkit-scrollbar-thumb,
+.admin-conversation-modal
+.ticket-conversation::-webkit-scrollbar-thumb {
+
+    background:
+        #d9dee7;
+
+    border-radius:
+        10px;
+}
+
+
+.modal-body::-webkit-scrollbar-thumb:hover,
+.admin-conversation-modal
+.ticket-conversation::-webkit-scrollbar-thumb:hover {
+
+    background:
+        #c4cbd5;
+}
+
+
+/* =====================================================
    RESPONSIVO
 ===================================================== */
 
@@ -1580,6 +2570,63 @@ td strong {
 
         grid-template-columns:
             1fr;
+    }
+
+
+    .support-admin-meta {
+
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+
+    .support-admin-actions {
+
+        grid-template-columns:
+            1fr 1fr;
+    }
+
+
+    .resposta-chamado-admin {
+
+        grid-column:
+            1 / -1;
+    }
+
+
+    .btn-responder-chamado-admin {
+
+        grid-column:
+            1 / -1;
+    }
+
+
+    .admin-conversation-reply {
+
+        grid-template-columns:
+            1fr 1fr;
+    }
+
+
+    .admin-conversation-reply
+    .resposta-chamado-admin {
+
+        grid-column:
+            1 / -1;
+
+        height:
+            80px;
+
+        min-height:
+            80px;
+    }
+
+
+    .admin-conversation-reply
+    .btn-responder-chamado-admin {
+
+        grid-column:
+            1 / -1;
     }
 
 }
@@ -1632,21 +2679,25 @@ td strong {
 
     .stat-card {
 
-        min-height: 105px;
+        min-height:
+            105px;
 
-        padding: 15px;
+        padding:
+            15px;
     }
 
 
     .stat-card strong {
 
-        font-size: 23px;
+        font-size:
+            23px;
     }
 
 
     .admin-tabs {
 
-        overflow-x: auto;
+        overflow-x:
+            auto;
     }
 
 
@@ -1666,18 +2717,257 @@ td strong {
 
     .modal-overlay {
 
-        padding: 12px;
+        padding:
+            12px;
     }
 
 
     .modal {
 
-        width: 100%;
+        width:
+            100%;
 
         max-height:
             calc(100vh - 24px);
 
-        overflow-y: auto;
+        overflow-y:
+            auto;
+    }
+
+
+    .history-actions {
+
+        gap:
+            6px;
+    }
+
+
+    .clear-notifications-button {
+
+        padding:
+            7px 9px;
+
+        font-size:
+            8px;
+    }
+
+
+    .support-admin-card {
+
+        padding:
+            13px;
+    }
+
+
+    .support-admin-card-top {
+
+        flex-direction:
+            column;
+
+        align-items:
+            flex-start;
+    }
+
+
+    .support-admin-meta {
+
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .support-admin-actions {
+
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .status-chamado-admin,
+    .resposta-chamado-admin,
+    .btn-responder-chamado-admin {
+
+        width:
+            100%;
+
+        grid-column:
+            auto;
+    }
+
+
+    .resposta-chamado-admin {
+
+        height:
+            80px;
+    }
+
+
+    /* CONVERSA */
+
+    .admin-conversation-modal {
+
+        width:
+            100%;
+
+        max-width:
+            100%;
+
+        max-height:
+            calc(100vh - 24px);
+
+        border-radius:
+            13px;
+    }
+
+
+    .admin-conversation-modal .modal-body {
+
+        max-height:
+            calc(100vh - 95px);
+
+        padding:
+            14px;
+    }
+
+
+    .admin-conversation-info {
+
+        align-items:
+            flex-start;
+
+        flex-direction:
+            column;
+
+        gap:
+            3px;
+    }
+
+
+    .admin-conversation-info span {
+
+        text-align:
+            left;
+    }
+
+
+    .admin-conversation-modal
+    .ticket-conversation {
+
+        max-height:
+            320px;
+
+        min-height:
+            160px;
+
+        padding:
+            5px;
+
+        gap:
+            8px;
+    }
+
+
+    .admin-conversation-modal
+    .conversation-message {
+
+        max-width:
+            94%;
+
+        padding:
+            10px 11px;
+
+        border-radius:
+            10px;
+    }
+
+
+    .admin-conversation-modal
+    .conversation-message-top {
+
+        gap:
+            6px;
+
+        margin-bottom:
+            4px;
+    }
+
+
+    .admin-conversation-modal
+    .conversation-message-top strong {
+
+        font-size:
+            9px;
+    }
+
+
+    .admin-conversation-modal
+    .conversation-message-top span {
+
+        font-size:
+            7px;
+    }
+
+
+    .admin-conversation-modal
+    .conversation-message p {
+
+        font-size:
+            9px;
+
+        line-height:
+            1.5;
+    }
+
+
+    .admin-conversation-reply {
+
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .admin-conversation-reply
+    .status-chamado-admin,
+    .admin-conversation-reply
+    .resposta-chamado-admin,
+    .admin-conversation-reply
+    .btn-responder-chamado-admin {
+
+        width:
+            100%;
+
+        grid-column:
+            auto;
+    }
+
+
+    .admin-conversation-reply
+    .status-chamado-admin {
+
+        height:
+            40px;
+    }
+
+
+    .admin-conversation-reply
+    .resposta-chamado-admin {
+
+        height:
+            85px;
+
+        min-height:
+            85px;
+    }
+
+
+    .admin-conversation-reply
+    .btn-responder-chamado-admin {
+
+        height:
+            42px;
+
+        min-height:
+            42px;
     }
 
 }
@@ -1694,29 +2984,45 @@ td strong {
 
     .admin-brand span {
 
-        display: none;
+        display:
+            none;
+    }
+
+
+    .admin-conversation-modal
+    .ticket-conversation {
+
+        max-height:
+            290px;
+    }
+
+
+    .admin-conversation-modal
+    .conversation-message {
+
+        max-width:
+            96%;
     }
 
 }
+.delete-account-button {
+    width: 100%;
+    border: 0;
+    border-radius: 10px;
+    padding: 12px 16px;
+    background: #dc2626;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
 
-/* =====================================================
-   SUPORTE
-===================================================== */
-.sup-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.sup-toolbar select,.sup-acoes select{padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#fff;font:inherit;color:var(--text)}
-.sup-row{cursor:pointer}
-.sup-row:hover{background:#f7f9fc}
-.sup-pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:#eef2f7;color:#4b5563}
-.sup-pill.aberto{background:#fff4e5;color:#b45309}
-.sup-pill.em-atendimento{background:#e8f0fe;color:#1d4ed8}
-.sup-pill.resolvido,.sup-pill.fechado{background:#e6f6ee;color:#159957}
-.sup-novo{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:6px}
-.sup-modal{max-width:720px;width:100%}
-.sup-conversa{max-height:340px;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:4px 2px;margin-bottom:14px}
-.sup-msg{max-width:82%;padding:10px 14px;border-radius:14px;background:#f1f4f8;font-size:14px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
-.sup-msg small{display:block;font-size:11px;color:var(--text-secondary);margin-bottom:3px}
-.sup-msg.admin{align-self:flex-end;background:var(--primary);color:#fff}
-.sup-msg.admin small{color:rgba(255,255,255,.8)}
-.sup-resposta textarea{width:100%;min-height:90px;padding:12px;border:1px solid var(--border);border-radius:12px;font:inherit;resize:vertical;box-sizing:border-box}
-.sup-acoes{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
-.sup-sec{padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:#fff;font:inherit;cursor:pointer}
+.delete-account-button:hover {
+    background: #b91c1c;
+}
+
+.delete-account-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}       
