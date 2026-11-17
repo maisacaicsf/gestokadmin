@@ -12,6 +12,14 @@
 
     <title>Gestok | Administração</title>
 
+    <meta name="theme-color" content="#2563eb">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Gestok Admin">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
     <link
         rel="stylesheet"
         href="style.css"
@@ -762,6 +770,17 @@
 
                     </div>
 
+                    <button
+                        type="button"
+                        class="sound-toggle-button"
+                        id="btnSomChamados"
+                        aria-pressed="true"
+                        title="Tocar um som quando chegar um chamado novo"
+                    >
+                        🔔 Som ligado
+                    </button>
+
+
                 </div>
 
 
@@ -1139,6 +1158,62 @@
 
     <script src="script.js"></script>
 
+
+    <!-- Instalação do Gestok no celular -->
+    <button type="button" id="btnInstalarApp" class="install-app-button" aria-label="Instalar Gestok no celular">
+        <span aria-hidden="true">⬇</span> Instalar no celular
+    </button>
+
+    <script>
+    (function () {
+        const botao = document.getElementById('btnInstalarApp');
+        if (!botao) return;
+
+        let eventoInstalacao = null;
+        const ua = navigator.userAgent || '';
+        const ehIOS = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const jaInstalado = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+        if (jaInstalado) {
+            botao.hidden = true;
+            return;
+        }
+
+        window.addEventListener('beforeinstallprompt', function (evento) {
+            evento.preventDefault();
+            eventoInstalacao = evento;
+            botao.hidden = false;
+        });
+
+        botao.addEventListener('click', async function () {
+            if (eventoInstalacao) {
+                eventoInstalacao.prompt();
+                await eventoInstalacao.userChoice;
+                eventoInstalacao = null;
+                return;
+            }
+
+            if (ehIOS) {
+                alert('Para instalar no iPhone/iPad:\n\n1. Abra este site no Safari.\n2. Toque no botão Compartilhar.\n3. Escolha “Adicionar à Tela de Início”.\n4. Toque em Adicionar.');
+            } else {
+                alert('Para instalar o Gestok:\n\nAbra este site no Google Chrome ou navegador compatível, toque no menu (⋮) e escolha “Instalar aplicativo” ou “Adicionar à tela inicial”.');
+            }
+        });
+
+        window.addEventListener('appinstalled', function () {
+            botao.hidden = true;
+            eventoInstalacao = null;
+        });
+    })();
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+            navigator.serviceWorker.register('./service-worker.js').catch(function (erro) {
+                console.warn('Não foi possível preparar a instalação do Gestok:', erro);
+            });
+        });
+    }
+    </script>
 
 </body>
 

@@ -177,6 +177,24 @@ let chamadosCache = [];
 /* Chamados abertos manualmente no painel */
 const chamadosExpandidosAdmin = new Set();
 
+/* Estado do tempo real (ver seção "TEMPO REAL" no fim do arquivo) */
+const tempoRealAdmin = {
+    unsubs: [],
+    lojas: false,
+    notificacoes: false,
+    chamados: false,
+    docsChamados: [],
+    nomesLojas: new Map(),
+    timerChamados: null,
+    lojasEstado: {
+        rodando: false,
+        refazer: false,
+        todos: true,
+        pendentes: new Set(),
+        snapshot: null
+    }
+};
+
 
 /* =====================================================
    UTILITÁRIOS
@@ -474,6 +492,8 @@ function classeStatusChamado(status) {
 ===================================================== */
 
 function mostrarLogin() {
+    pararTempoRealAdmin();
+
 
     if (loginView) {
         loginView.hidden = false;
@@ -496,11 +516,7 @@ function mostrarPainelAdmin() {
         adminView.hidden = false;
     }
 
-    carregarLojas();
-
-    carregarNotificacoes();
-
-    carregarChamadosAdmin();
+    iniciarTempoRealAdmin();
 
 }
 
@@ -854,6 +870,10 @@ async function carregarUsuarioDaLoja(
 ===================================================== */
 
 async function carregarLojas() {
+    if (tempoRealAdmin.lojas) {
+        return; /* já atualiza sozinha */
+    }
+
 
     if (!listaLojas) {
         return;
@@ -1766,6 +1786,10 @@ if (mensagemNotificacao) {
 ===================================================== */
 
 async function carregarNotificacoes() {
+    if (tempoRealAdmin.notificacoes) {
+        return; /* já atualiza sozinha */
+    }
+
 
     if (!listaNotificacoes) {
         return;
@@ -2462,6 +2486,10 @@ if (btnLimparNotificacoes) {
 ===================================================== */
 
 async function carregarChamadosAdmin() {
+    if (tempoRealAdmin.chamados) {
+        return; /* já atualiza sozinha */
+    }
+
 
     if (!listaChamadosAdmin) {
         return;
@@ -3492,7 +3520,8 @@ if (filtroStatusChamados) {
 async function salvarAtendimentoAdmin(
     id,
     respostaForcada = null,
-    statusForcado = null
+    statusForcado = null,
+    silencioso = false
 ) {
 
     const chamado =
@@ -3509,15 +3538,15 @@ async function salvarAtendimentoAdmin(
 
     if (!chamado) {
 
-        alert("Chamado não encontrado.");
-        return;
+        if (!silencioso) alert("Chamado não encontrado.");
+        return false;
 
     }
 
     if (!chamado.referencia) {
 
-        alert("Referência do chamado não encontrada.");
-        return;
+        if (!silencioso) alert("Referência do chamado não encontrada.");
+        return false;
 
     }
 
@@ -3647,16 +3676,20 @@ async function salvarAtendimentoAdmin(
                     : "Chamado atualizado com sucesso.";
         }
 
+        return true;
+
     } catch (erro) {
 
         console.error("Erro ao atualizar chamado:", erro);
 
-        alert("Não foi possível atualizar o chamado.");
+        if (!silencioso) alert("Não foi possível atualizar o chamado.");
 
         if (botao) {
             botao.disabled = false;
             botao.textContent = "Salvar atendimento";
         }
+
+        return false;
 
     }
 
@@ -3759,6 +3792,97 @@ async function atualizarStatusChamadoAdmin(
 
 let modalConversaAdmin = null;
 let unsubscribeConversaAdmin = null;
+let unsubscribeChamadoAdmin = null;
+let handlerEscConversaAdmin = null;
+let conversaAdminMudou = false;
+let enviandoConversaAdmin = false;
+let qtdMensagensConversaAdmin = -1;
+
+/* Rascunhos ficam só na memória da página: se fechar e reabrir o chat, o texto volta. */
+const rascunhosConversaAdmin = {};
+
+const STATUS_CONVERSA_ADMIN = [
+    "Aberto",
+    "Em atendimento",
+    "Em análise",
+    "Resolvido",
+    "Fechado"
+];
+
+const RESPOSTAS_RAPIDAS_ADMIN = [
+    {
+        rotulo: "Recebido",
+        texto: "Olá! Recebemos o seu chamado e já estamos analisando. Retornamos em breve."
+    },
+    {
+        rotulo: "Pedir detalhes",
+        texto: "Para ajudar melhor, pode nos explicar com mais detalhes o que está acontecendo (em qual tela e o passo a passo até o problema)?"
+    },
+    {
+        rotulo: "Corrigido",
+        texto: "Já ajustamos isso por aqui. Pode testar novamente e nos confirmar se está tudo certo?"
+    },
+    {
+        rotulo: "Encerrar",
+        texto: "Vamos encerrar este chamado. Se precisar de algo mais, é só abrir um novo. Obrigado!"
+    }
+];
+
+/* ---------- utilitários ---------- */
+
+function slugStatusConversaAdmin(status) {
+
+    return normalizarStatusChamado(status)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, "-");
+
+}
+
+function dataConversaAdmin(valor) {
+
+    if (!valor) return null;
+
+    try {
+
+        const data =
+            typeof valor.toDate === "function"
+                ? valor.toDate()
+                : (valor instanceof Date ? valor : new Date(valor));
+
+        return isNaN(data.getTime()) ? null : data;
+
+    } catch (erro) {
+
+        return null;
+
+    }
+
+}
+
+function rotuloDiaConversaAdmin(data) {
+
+    const hoje = new Date();
+    const ontem = new Date();
+    ontem.setDate(hoje.getDate() - 1);
+
+    if (data.toDateString() === hoje.toDateString()) return "Hoje";
+    if (data.toDateString() === ontem.toDateString()) return "Ontem";
+
+    return data.toLocaleDateString("pt-BR");
+
+}
+
+function horaConversaAdmin(data) {
+
+    if (!data) return "";
+
+    return data.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+
+}
 
 function conversaAdminEstaPertoDoFim(elemento) {
 
@@ -3793,11 +3917,87 @@ function rolarConversaAdminParaFim(forcar = false) {
 
 }
 
+function atualizarBadgeConversaAdmin(status) {
+
+    const badge =
+        document.getElementById("statusBadgeConversaAdmin");
+
+    if (!badge) return;
+
+    badge.textContent = textoStatusChamado(status || "Aberto");
+
+    badge.className =
+        "conversation-status-badge " +
+        slugStatusConversaAdmin(status || "Aberto");
+
+}
+
+function atualizarBotaoEnvioConversaAdmin(chamado) {
+
+    const textarea = document.getElementById("mensagemConversaAdmin");
+    const select = document.getElementById("statusSelectConversaAdmin");
+    const botao = document.getElementById("btnEnviarMensagemAdmin");
+    const contador = document.getElementById("contadorConversaAdmin");
+
+    if (!textarea || !botao) return;
+
+    const texto = textarea.value.trim();
+
+    const statusMudou =
+        !!select &&
+        normalizarStatusChamado(select.value) !==
+        normalizarStatusChamado(chamado.status || "Aberto");
+
+    if (!enviandoConversaAdmin) {
+
+        botao.disabled = !texto && !statusMudou;
+
+        botao.textContent =
+            texto ? "Responder" : "Atualizar status";
+
+    }
+
+    if (contador) {
+
+        const tamanho = textarea.value.length;
+
+        contador.textContent = tamanho + "/2000";
+        contador.classList.toggle("show", tamanho >= 1500);
+
+    }
+
+}
+
 function fecharConversaAdmin() {
+
+    const textarea = document.getElementById("mensagemConversaAdmin");
+
+    if (textarea && modalConversaAdmin?.dataset.chamadoId) {
+
+        const idChamado = modalConversaAdmin.dataset.chamadoId;
+
+        if (textarea.value.trim()) {
+            rascunhosConversaAdmin[idChamado] = textarea.value;
+        } else {
+            delete rascunhosConversaAdmin[idChamado];
+        }
+
+    }
 
     if (typeof unsubscribeConversaAdmin === "function") {
         unsubscribeConversaAdmin();
-        unsubscribeConversaAdmin = null;
+    }
+
+    if (typeof unsubscribeChamadoAdmin === "function") {
+        unsubscribeChamadoAdmin();
+    }
+
+    unsubscribeConversaAdmin = null;
+    unsubscribeChamadoAdmin = null;
+
+    if (handlerEscConversaAdmin) {
+        document.removeEventListener("keydown", handlerEscConversaAdmin);
+        handlerEscConversaAdmin = null;
     }
 
     if (modalConversaAdmin) {
@@ -3805,7 +4005,26 @@ function fecharConversaAdmin() {
         modalConversaAdmin = null;
     }
 
+    enviandoConversaAdmin = false;
+    qtdMensagensConversaAdmin = -1;
+
+    /* Se o status mudou com o chat aberto, atualiza a lista e os contadores. */
+    if (conversaAdminMudou) {
+
+        conversaAdminMudou = false;
+
+        try {
+            atualizarResumoChamadosAdmin();
+            renderizarChamadosAdmin();
+        } catch (erro) {
+            console.error("Erro ao atualizar lista após fechar conversa:", erro);
+        }
+
+    }
+
 }
+
+/* ---------- renderização das mensagens ---------- */
 
 function renderizarConversaAdmin(mensagens, chamado) {
 
@@ -3813,6 +4032,10 @@ function renderizarConversaAdmin(mensagens, chamado) {
         document.getElementById("listaMensagensConversaAdmin");
 
     if (!lista) return;
+
+    const estavaNoFim = conversaAdminEstaPertoDoFim(lista);
+    const scrollAntes = lista.scrollTop;
+    const primeiraRenderizacao = qtdMensagensConversaAdmin < 0;
 
     const listaMensagens = [...mensagens];
 
@@ -3884,7 +4107,12 @@ function renderizarConversaAdmin(mensagens, chamado) {
 
     }
 
-    if (!listaMensagens.length) {
+    const total = listaMensagens.length;
+    const cresceu = total > qtdMensagensConversaAdmin;
+
+    qtdMensagensConversaAdmin = total;
+
+    if (!total) {
 
         lista.innerHTML = `
             <div class="conversation-empty">
@@ -3895,12 +4123,37 @@ function renderizarConversaAdmin(mensagens, chamado) {
 
     }
 
+    let ultimoDia = "";
+
     lista.innerHTML = listaMensagens.map(function (mensagem) {
 
         const admin =
             mensagem.autorTipo === "admin";
 
+        const data = dataConversaAdmin(mensagem.criadoEm);
+
+        let separador = "";
+
+        if (data) {
+
+            const dia = data.toDateString();
+
+            if (dia !== ultimoDia) {
+
+                ultimoDia = dia;
+
+                separador = `
+                    <div class="conversation-day">
+                        <span>${escaparHtml(rotuloDiaConversaAdmin(data))}</span>
+                    </div>
+                `;
+
+            }
+
+        }
+
         return `
+            ${separador}
             <div class="conversation-message ${admin ? "admin" : "cliente"}">
                 <div class="conversation-message-top">
                     <strong>
@@ -3910,20 +4163,122 @@ function renderizarConversaAdmin(mensagens, chamado) {
                         )}
                     </strong>
                     <span>
-                        ${formatarData(mensagem.criadoEm)}
+                        ${escaparHtml(horaConversaAdmin(data))}
                     </span>
                 </div>
-                <p>
-                    ${escaparHtml(mensagem.mensagem || "")}
-                </p>
+                <p>${escaparHtml(mensagem.mensagem || "")}</p>
             </div>
         `;
 
     }).join("");
 
-    rolarConversaAdminParaFim();
+    const pilula =
+        document.getElementById("btnNovasMensagensConversaAdmin");
+
+    if (primeiraRenderizacao || estavaNoFim) {
+
+        /* Abre já no fim da conversa; depois só acompanha se a pessoa estiver no fim. */
+        requestAnimationFrame(function () {
+            lista.scrollTop = lista.scrollHeight;
+        });
+
+        if (pilula) pilula.hidden = true;
+
+    } else {
+
+        /* Quem está lendo mensagens antigas não é arrastado para o fim. */
+        lista.scrollTop = scrollAntes;
+
+        if (cresceu && pilula) pilula.hidden = false;
+
+    }
 
 }
+
+/* ---------- envio ---------- */
+
+async function enviarConversaAdmin(chamado) {
+
+    if (enviandoConversaAdmin) return;
+
+    const textarea = document.getElementById("mensagemConversaAdmin");
+    const select = document.getElementById("statusSelectConversaAdmin");
+    const botao = document.getElementById("btnEnviarMensagemAdmin");
+    const erro = document.getElementById("erroConversaAdmin");
+
+    if (!textarea || !botao) return;
+
+    const resposta = textarea.value.trim();
+
+    const novoStatus =
+        select?.value || textoStatusChamado(chamado.status);
+
+    const statusMudou =
+        normalizarStatusChamado(novoStatus) !==
+        normalizarStatusChamado(chamado.status || "Aberto");
+
+    if (!resposta && !statusMudou) return;
+
+    enviandoConversaAdmin = true;
+    botao.disabled = true;
+    botao.textContent = "Enviando...";
+
+    if (erro) erro.textContent = "";
+
+    let ok = false;
+
+    try {
+
+        ok = await salvarAtendimentoAdmin(
+            chamado.id,
+            resposta,
+            novoStatus,
+            true
+        );
+
+    } catch (e) {
+
+        console.error("Erro ao enviar mensagem do Admin:", e);
+        ok = false;
+
+    }
+
+    enviandoConversaAdmin = false;
+
+    /* O chat pode ter sido fechado durante o envio. */
+    if (!document.body.contains(botao)) return;
+
+    if (ok) {
+
+        chamado.status = novoStatus;
+        conversaAdminMudou = true;
+
+        textarea.value = "";
+        textarea.style.height = "";
+        delete rascunhosConversaAdmin[chamado.id];
+
+        if (select) {
+            select.value = textoStatusChamado(chamado.status);
+            select.dataset.tocado = "";
+        }
+
+        atualizarBadgeConversaAdmin(chamado.status);
+        rolarConversaAdminParaFim(true);
+
+    } else if (erro) {
+
+        /* Nada é apagado: a mensagem continua no campo para tentar de novo. */
+        erro.textContent =
+            "Não foi possível enviar. Sua mensagem foi mantida, tente novamente.";
+
+    }
+
+    atualizarBotaoEnvioConversaAdmin(chamado);
+    textarea.focus();
+
+}
+
+/* ---------- abrir conversa ---------- */
 
 function abrirConversaAdmin(id) {
 
@@ -3936,11 +4291,43 @@ function abrirConversaAdmin(id) {
 
     fecharConversaAdmin();
 
+    conversaAdminMudou = false;
+    qtdMensagensConversaAdmin = -1;
+
     modalConversaAdmin =
         document.createElement("div");
 
     modalConversaAdmin.className =
         "modal-overlay active";
+
+    modalConversaAdmin.dataset.chamadoId = String(chamado.id);
+
+    const dataAbertura =
+        dataConversaAdmin(chamado.criadoEm || chamado.data);
+
+    const opcoesStatus = STATUS_CONVERSA_ADMIN.map(function (status) {
+
+        const selecionado =
+            status === textoStatusChamado(chamado.status || "Aberto");
+
+        return `<option value="${escaparHtml(status)}"${selecionado ? " selected" : ""}>${escaparHtml(status)}</option>`;
+
+    }).join("");
+
+    const chips = RESPOSTAS_RAPIDAS_ADMIN.map(function (item, indice) {
+
+        return `
+            <button
+                type="button"
+                class="admin-chat-chip"
+                data-indice="${indice}"
+                title="${escaparHtml(item.texto)}"
+            >
+                ${escaparHtml(item.rotulo)}
+            </button>
+        `;
+
+    }).join("");
 
     modalConversaAdmin.innerHTML = `
         <div class="modal admin-conversation-modal">
@@ -3959,6 +4346,7 @@ function abrirConversaAdmin(id) {
                     type="button"
                     class="modal-close"
                     id="fecharConversaAdmin"
+                    aria-label="Fechar conversa"
                 >
                     ×
                 </button>
@@ -3976,25 +4364,54 @@ function abrirConversaAdmin(id) {
                         <small>
                             ${escaparHtml(
                                 obterNomeLojaDoChamado(chamado)
-                            )}
+                            )}${chamado.usuario ? " · " + escaparHtml(chamado.usuario) : ""}${dataAbertura ? " · aberto em " + escaparHtml(dataAbertura.toLocaleDateString("pt-BR")) : ""}
                         </small>
                     </div>
 
                     <span
                         id="statusBadgeConversaAdmin"
                         class="conversation-status-badge"
-                    >
-                        ${escaparHtml(textoStatusChamado(chamado.status || "Aberto"))}
-                    </span>
+                    ></span>
                 </div>
 
-                <div
-                    class="ticket-conversation"
-                    id="listaMensagensConversaAdmin"
-                >
-                    <div class="conversation-empty">
-                        Carregando conversa...
+                <div class="admin-chat-wrap">
+
+                    <div
+                        class="ticket-conversation"
+                        id="listaMensagensConversaAdmin"
+                    >
+                        <div class="conversation-empty">
+                            Carregando conversa...
+                        </div>
                     </div>
+
+                    <button
+                        type="button"
+                        class="admin-chat-newmsg"
+                        id="btnNovasMensagensConversaAdmin"
+                        hidden
+                    >
+                        ↓ Novas mensagens
+                    </button>
+
+                </div>
+
+                <div class="admin-chat-toolbar">
+
+                    <label class="admin-chat-status-label">
+                        Status
+                        <select
+                            id="statusSelectConversaAdmin"
+                            class="admin-chat-status"
+                        >
+                            ${opcoesStatus}
+                        </select>
+                    </label>
+
+                    <div class="admin-chat-chips">
+                        ${chips}
+                    </div>
+
                 </div>
 
                 <div class="admin-conversation-reply">
@@ -4010,10 +4427,19 @@ function abrirConversaAdmin(id) {
                         type="button"
                         class="btn-responder-chamado-admin"
                         id="btnEnviarMensagemAdmin"
+                        disabled
                     >
                         Responder
                     </button>
 
+                </div>
+
+                <div class="admin-chat-footer">
+                    <span id="erroConversaAdmin" class="admin-chat-error" role="alert"></span>
+                    <span>
+                        Enter envia · Shift+Enter quebra linha
+                        <span id="contadorConversaAdmin" class="admin-chat-counter"></span>
+                    </span>
                 </div>
 
             </div>
@@ -4022,37 +4448,149 @@ function abrirConversaAdmin(id) {
 
     document.body.appendChild(modalConversaAdmin);
 
+    aplicarEstilosConversaAdmin();
+    aplicarEstilosChatUpgradeAdmin();
+
+    atualizarBadgeConversaAdmin(chamado.status);
+
+    const textarea = document.getElementById("mensagemConversaAdmin");
+    const select = document.getElementById("statusSelectConversaAdmin");
+    const lista = document.getElementById("listaMensagensConversaAdmin");
+    const pilula = document.getElementById("btnNovasMensagensConversaAdmin");
+
+    /* Fechar: botão, clique fora e tecla Esc. */
+
     document
         .getElementById("fecharConversaAdmin")
-        ?.addEventListener(
-            "click",
-            fecharConversaAdmin
-        );
+        ?.addEventListener("click", fecharConversaAdmin);
 
-    modalConversaAdmin.addEventListener(
-        "click",
-        function (event) {
-            if (event.target === modalConversaAdmin) {
-                fecharConversaAdmin();
-            }
+    modalConversaAdmin.addEventListener("click", function (event) {
+        if (event.target === modalConversaAdmin) {
+            fecharConversaAdmin();
         }
-    );
+    });
 
-    const statusBadge =
-        document.getElementById("statusBadgeConversaAdmin");
+    handlerEscConversaAdmin = function (event) {
+        if (event.key === "Escape" && modalConversaAdmin) {
+            fecharConversaAdmin();
+        }
+    };
 
-    if (statusBadge) {
-        statusBadge.textContent =
-            textoStatusChamado(
-                chamado.status || "Aberto"
-            );
+    document.addEventListener("keydown", handlerEscConversaAdmin);
 
-        statusBadge.className =
-            "conversation-status-badge " +
-            normalizarStatusChamado(
-                chamado.status || "Aberto"
-            );
+    /* Rascunho salvo anteriormente. */
+
+    if (textarea && rascunhosConversaAdmin[chamado.id]) {
+
+        textarea.value = rascunhosConversaAdmin[chamado.id];
+        textarea.style.height =
+            Math.min(textarea.scrollHeight, 160) + "px";
+
     }
+
+    /* Escolher status manualmente. */
+
+    select?.addEventListener("change", function () {
+        select.dataset.tocado = "1";
+        atualizarBotaoEnvioConversaAdmin(chamado);
+    });
+
+    /* Digitar: cresce o campo, guarda rascunho e sugere "Em atendimento" se estava Aberto. */
+
+    textarea?.addEventListener("input", function () {
+
+        textarea.style.height = "";
+
+        if (textarea.value) {
+            textarea.style.height =
+                Math.min(textarea.scrollHeight, 160) + "px";
+        }
+
+        rascunhosConversaAdmin[chamado.id] = textarea.value;
+
+        if (
+            select &&
+            select.dataset.tocado !== "1" &&
+            normalizarStatusChamado(chamado.status || "Aberto") === "aberto"
+        ) {
+
+            select.value =
+                textarea.value.trim()
+                    ? "Em atendimento"
+                    : textoStatusChamado(chamado.status);
+
+        }
+
+        const erro = document.getElementById("erroConversaAdmin");
+        if (erro) erro.textContent = "";
+
+        atualizarBotaoEnvioConversaAdmin(chamado);
+
+    });
+
+    /* Enter envia; Shift+Enter quebra linha; ignora Enter de teclado de acentuação (IME). */
+
+    textarea?.addEventListener("keydown", function (event) {
+
+        if (
+            event.key !== "Enter" ||
+            event.shiftKey ||
+            event.isComposing
+        ) {
+            return;
+        }
+
+        event.preventDefault();
+
+        enviarConversaAdmin(chamado);
+
+    });
+
+    document
+        .getElementById("btnEnviarMensagemAdmin")
+        ?.addEventListener("click", function () {
+            enviarConversaAdmin(chamado);
+        });
+
+    /* Respostas rápidas: inserem o texto para a pessoa revisar antes de enviar. */
+
+    modalConversaAdmin
+        .querySelectorAll(".admin-chat-chip")
+        .forEach(function (chip) {
+
+            chip.addEventListener("click", function () {
+
+                const item =
+                    RESPOSTAS_RAPIDAS_ADMIN[Number(chip.dataset.indice)];
+
+                if (!item || !textarea) return;
+
+                const atual = textarea.value.trim();
+
+                textarea.value =
+                    (atual ? atual + "\n" : "") + item.texto;
+
+                textarea.dispatchEvent(new Event("input"));
+                textarea.focus();
+
+            });
+
+        });
+
+    /* Botão "Novas mensagens". */
+
+    pilula?.addEventListener("click", function () {
+        pilula.hidden = true;
+        rolarConversaAdminParaFim(true);
+    });
+
+    lista?.addEventListener("scroll", function () {
+        if (pilula && conversaAdminEstaPertoDoFim(lista)) {
+            pilula.hidden = true;
+        }
+    });
+
+    /* Mensagens em tempo real. */
 
     unsubscribeConversaAdmin =
         chamado.referencia
@@ -4076,88 +4614,234 @@ function abrirConversaAdmin(id) {
 
                 },
                 function (erro) {
+
                     console.error(
                         "Erro ao carregar conversa do Admin:",
                         erro
                     );
+
+                    const area =
+                        document.getElementById("listaMensagensConversaAdmin");
+
+                    if (area) {
+                        area.innerHTML = `
+                            <div class="conversation-empty">
+                                Não foi possível carregar a conversa. Feche e abra novamente.
+                            </div>
+                        `;
+                    }
+
                 }
             );
 
-    document
-        .getElementById("btnEnviarMensagemAdmin")
-        ?.addEventListener(
-            "click",
-            async function () {
+    /* Status do chamado em tempo real (ex.: a loja fechou o chamado). */
 
-                const textarea =
-                    document.getElementById(
-                        "mensagemConversaAdmin"
-                    );
+    unsubscribeChamadoAdmin =
+        chamado.referencia.onSnapshot(
+            function (doc) {
 
-                const resposta =
-                    textarea?.value.trim() || "";
+                if (!doc.exists) return;
 
-                const novoStatus =
-                    chamado.status || "Aberto";
+                const statusAntes = chamado.status;
 
-                if (!resposta) return;
+                Object.assign(chamado, doc.data() || {});
 
-                const botao = this;
-                botao.disabled = true;
-                botao.textContent = "Enviando...";
+                if (
+                    normalizarStatusChamado(statusAntes) !==
+                    normalizarStatusChamado(chamado.status)
+                ) {
 
-                try {
-                    await salvarAtendimentoAdmin(
-                        chamado.id,
-                        resposta,
-                        novoStatus
-                    );
+                    conversaAdminMudou = true;
 
-                    chamado.status = novoStatus;
+                    atualizarBadgeConversaAdmin(chamado.status);
 
-                    const badge =
-                        document.getElementById("statusBadgeConversaAdmin");
-
-                    if (badge) {
-                        badge.textContent = textoStatusChamado(novoStatus);
-                        badge.className =
-                            "conversation-status-badge " +
-                            normalizarStatusChamado(novoStatus);
+                    if (select && select.dataset.tocado !== "1") {
+                        select.value = textoStatusChamado(chamado.status);
                     }
 
-                    if (textarea) {
-                        textarea.value = "";
-                    }
+                    atualizarBotaoEnvioConversaAdmin(chamado);
 
-                } finally {
-                    botao.disabled = false;
-                    botao.textContent = "Responder";
                 }
 
+            },
+            function (erro) {
+                console.error("Erro ao acompanhar chamado do Admin:", erro);
             }
         );
 
-    const textareaConversaAdmin =
-        document.getElementById("mensagemConversaAdmin");
+    atualizarBotaoEnvioConversaAdmin(chamado);
 
-    if (textareaConversaAdmin) {
+    textarea?.focus();
 
-        textareaConversaAdmin.addEventListener("keydown", function (event) {
+}
 
-            if (event.key !== "Enter" || event.shiftKey) {
-                return;
-            }
+/* ---------- estilos do upgrade (somam aos já existentes) ---------- */
 
-            event.preventDefault();
-            document
-                .getElementById("btnEnviarMensagemAdmin")
-                ?.click();
+function aplicarEstilosChatUpgradeAdmin() {
 
-        });
-
+    if (document.getElementById("gestok-chat-upgrade-admin-style")) {
+        return;
     }
 
-    aplicarEstilosConversaAdmin();
+    const style = document.createElement("style");
+    style.id = "gestok-chat-upgrade-admin-style";
+
+    style.textContent = `
+        .admin-chat-wrap {
+            position: relative;
+        }
+
+        .admin-chat-newmsg {
+            position: absolute;
+            left: 50%;
+            bottom: 10px;
+            transform: translateX(-50%);
+            border: 0;
+            border-radius: 999px;
+            padding: 7px 12px;
+            background: #3478e5;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 9px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 6px 18px rgba(37, 99, 211, .35);
+        }
+
+        .admin-chat-newmsg[hidden] {
+            display: none;
+        }
+
+        .conversation-day {
+            align-self: center;
+            margin: 4px 0;
+        }
+
+        .conversation-day span {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: #eef1f4;
+            color: #747d88;
+            font-size: 8px;
+            font-weight: 700;
+        }
+
+        .admin-chat-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 12px;
+            margin-top: 12px;
+        }
+
+        .admin-chat-status-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #697382;
+            font-size: 9px;
+            font-weight: 700;
+        }
+
+        .admin-chat-status {
+            height: 30px;
+            padding: 0 8px;
+            border: 1px solid #dfe5ec;
+            border-radius: 7px;
+            background: #ffffff;
+            color: #4f5966;
+            font-family: inherit;
+            font-size: 9px;
+            font-weight: 700;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .admin-chat-status:focus {
+            border-color: #3478e5;
+            box-shadow: 0 0 0 3px rgba(52, 120, 229, .09);
+        }
+
+        .admin-chat-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .admin-chat-chip {
+            border: 1px solid #dceaff;
+            border-radius: 999px;
+            padding: 5px 10px;
+            background: #f5f9ff;
+            color: #2563d3;
+            font-family: inherit;
+            font-size: 9px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .admin-chat-chip:hover {
+            background: #edf4ff;
+        }
+
+        .admin-conversation-reply {
+            margin-top: 8px;
+            align-items: end;
+        }
+
+        .admin-conversation-reply .btn-responder-chamado-admin:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+        }
+
+        .admin-chat-footer {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 6px;
+            min-height: 12px;
+            color: #9ba4b1;
+            font-size: 8px;
+        }
+
+        .admin-chat-error {
+            color: #e44b52;
+            font-weight: 700;
+        }
+
+        .admin-chat-counter {
+            display: none;
+            margin-left: 6px;
+            font-weight: 700;
+        }
+
+        .admin-chat-counter.show {
+            display: inline;
+        }
+
+        @media (max-width: 650px) {
+
+            .admin-conversation-reply {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-conversation-modal .conversation-message {
+                max-width: 94%;
+            }
+
+            .admin-conversation-modal .ticket-conversation {
+                max-height: 320px;
+            }
+
+            .admin-chat-footer {
+                flex-direction: column;
+            }
+
+        }
+    `;
+
+    document.head.appendChild(style);
 
 }
 
@@ -4464,3 +5148,674 @@ if (excluirContaBtn) {
         }
     });
 }
+
+
+/* =====================================================
+   TEMPO REAL - ABAS ATUALIZAM SOZINHAS
+   Lojas, Notificações e Suporte "escutam" o Firebase.
+   Se algum listener falhar (ex.: regra não publicada),
+   aquela aba volta ao carregamento antigo (uma vez).
+===================================================== */
+
+const ESPERA_RENDER_CHAMADOS_MS = 300;
+const ESPERA_CONTAGEM_LOJA_MS = 60000;
+
+function pararTempoRealAdmin() {
+
+    tempoRealAdmin.unsubs.forEach(function (cancelar) {
+        try {
+            cancelar();
+        } catch (erro) {
+            /* listener já encerrado */
+        }
+    });
+
+    tempoRealAdmin.unsubs = [];
+    tempoRealAdmin.lojas = false;
+    tempoRealAdmin.notificacoes = false;
+    tempoRealAdmin.chamados = false;
+    tempoRealAdmin.docsChamados = [];
+    tempoRealAdmin.chamadosConhecidos = new Set();
+    tempoRealAdmin.baseChamados = false;
+    tempoRealAdmin.nomesLojas = new Map();
+    tempoRealAdmin.lojasEstado = {
+        rodando: false,
+        refazer: false,
+        todos: true,
+        pendentes: new Set(),
+        snapshot: null
+    };
+
+    clearTimeout(tempoRealAdmin.timerChamados);
+    tempoRealAdmin.timerChamados = null;
+
+}
+
+function iniciarTempoRealAdmin() {
+
+    /* Sempre recomeça do zero (login novo, troca de conta, etc.). */
+    pararTempoRealAdmin();
+
+    iniciarTempoRealLojasAdmin();
+    iniciarTempoRealNotificacoesAdmin();
+    iniciarTempoRealChamadosAdmin();
+
+}
+
+/* ---------- LOJAS ---------- */
+
+function iniciarTempoRealLojasAdmin() {
+
+    if (statusCarregamento) {
+        statusCarregamento.textContent = "Carregando...";
+    }
+
+    if (listaLojas && !lojasCache.length) {
+        listaLojas.innerHTML = `
+            <tr>
+                <td colspan="7" class="empty-cell">
+                    Carregando lojas...
+                </td>
+            </tr>
+        `;
+    }
+
+    tempoRealAdmin.lojas = true;
+
+    const estado = tempoRealAdmin.lojasEstado;
+
+    const cancelar = db.collection("lojas").onSnapshot(
+        function (snapshot) {
+
+            /* Nomes das lojas ficam disponíveis na hora para a aba Suporte. */
+            const nomes = new Map();
+
+            snapshot.docs.forEach(function (doc) {
+                const dados = doc.data() || {};
+                nomes.set(doc.id, {
+                    nome: dados.nome || "Sem nome",
+                    codigo: dados.codigo || dados.codigoLoja || "—"
+                });
+            });
+
+            tempoRealAdmin.nomesLojas = nomes;
+
+            if (tempoRealAdmin.chamados) {
+                reconstruirChamadosAoVivoAdmin();
+            }
+
+            /* Guarda quais lojas mudaram (soma, para não perder nada se vier rápido). */
+            snapshot.docChanges().forEach(function (mudanca) {
+                estado.pendentes.add(mudanca.doc.id);
+            });
+
+            estado.snapshot = snapshot;
+
+            processarLojasAoVivoAdmin();
+
+        },
+        function (erro) {
+
+            console.error("Tempo real das lojas indisponível:", erro);
+
+            tempoRealAdmin.lojas = false;
+            carregarLojas();
+
+        }
+    );
+
+    tempoRealAdmin.unsubs.push(cancelar);
+
+}
+
+async function processarLojasAoVivoAdmin() {
+
+    const estado = tempoRealAdmin.lojasEstado;
+
+    /* Uma montagem por vez; se chegar novidade no meio, refaz em seguida. */
+    if (estado.rodando) {
+        estado.refazer = true;
+        return;
+    }
+
+    estado.rodando = true;
+
+    try {
+
+        do {
+
+            estado.refazer = false;
+
+            const snapshot = estado.snapshot;
+            const todos = estado.todos;
+            const ids = estado.pendentes;
+
+            estado.todos = false;
+            estado.pendentes = new Set();
+
+            if (!snapshot || !tempoRealAdmin.lojas) {
+                break;
+            }
+
+            const antigos = new Map(
+                lojasCache.map(function (loja) {
+                    return [loja.id, loja];
+                })
+            );
+
+            const lojas = await Promise.all(
+                snapshot.docs.map(async function (documento) {
+
+                    const dados = documento.data() || {};
+                    const antigo = antigos.get(documento.id);
+
+                    let quantidadeProdutos = antigo ? antigo.quantidadeProdutos : 0;
+                    let quantidadeUsuarios = antigo ? antigo.quantidadeUsuarios : 0;
+                    let quantidadeMovimentacoes = antigo ? antigo.quantidadeMovimentacoes : 0;
+                    let contagemEm = antigo ? (antigo.contagemEm || 0) : 0;
+                    let usuario = antigo ? antigo.usuario : null;
+
+                    const novaOuTudo = todos || !antigo;
+
+                    /* Contagens (leitura pesada): só de loja nova/alterada, no máximo 1x por minuto. */
+                    const recontar =
+                        novaOuTudo ||
+                        (
+                            ids.has(documento.id) &&
+                            Date.now() - contagemEm > ESPERA_CONTAGEM_LOJA_MS
+                        );
+
+                    if (recontar) {
+
+                        try {
+
+                            const resultado = await Promise.all([
+                                documento.ref.collection("produtos").get(),
+                                documento.ref.collection("usuarios").get(),
+                                documento.ref.collection("movimentacoes").get()
+                            ]);
+
+                            quantidadeProdutos = resultado[0].size;
+                            quantidadeUsuarios = resultado[1].size;
+                            quantidadeMovimentacoes = resultado[2].size;
+                            contagemEm = Date.now();
+
+                        } catch (erroInterno) {
+
+                            console.error(
+                                "Erro ao carregar subcoleções da loja:",
+                                documento.id,
+                                erroInterno
+                            );
+
+                        }
+
+                    }
+
+                    /* Usuário da loja: só de loja nova ou se o dono mudou. */
+                    if (
+                        novaOuTudo ||
+                        (antigo && antigo.donoUid !== (dados.donoUid || null))
+                    ) {
+
+                        try {
+
+                            usuario = await carregarUsuarioDaLoja(
+                                documento,
+                                dados
+                            );
+
+                        } catch (erroUsuario) {
+
+                            console.error(
+                                "Erro ao carregar usuário da loja:",
+                                documento.id,
+                                erroUsuario
+                            );
+
+                        }
+
+                    }
+
+                    return {
+                        id: documento.id,
+                        nome: dados.nome || "Sem nome",
+                        codigo: dados.codigo || dados.codigoLoja || "—",
+                        email: dados.email || "—",
+                        donoUid: dados.donoUid || null,
+                        usuario: usuario,
+                        assinatura: dados.assinatura || {},
+                        ativa: dados.ativa,
+                        status: dados.status,
+                        plano: dados.plano,
+                        criadaEm: dados.criadaEm,
+                        quantidadeProdutos,
+                        quantidadeUsuarios,
+                        quantidadeMovimentacoes,
+                        contagemEm
+                    };
+
+                })
+            );
+
+            /* Saiu do painel durante a montagem: descarta. */
+            if (!tempoRealAdmin.lojas) {
+                break;
+            }
+
+            lojasCache = lojas;
+
+            atualizarResumoLojas();
+            renderizarLojas();
+
+            if (statusCarregamento) {
+                statusCarregamento.textContent =
+                    `${lojas.length} ${
+                        lojas.length === 1
+                            ? "loja encontrada"
+                            : "lojas encontradas"
+                    }.`;
+            }
+
+        } while (estado.refazer && tempoRealAdmin.lojas);
+
+    } catch (erro) {
+
+        console.error("Erro ao atualizar lojas em tempo real:", erro);
+
+        if (statusCarregamento) {
+            statusCarregamento.textContent = "Erro ao atualizar.";
+        }
+
+    } finally {
+
+        estado.rodando = false;
+
+    }
+
+}
+
+/* ---------- NOTIFICAÇÕES ---------- */
+
+function iniciarTempoRealNotificacoesAdmin() {
+
+    if (statusNotificacoes) {
+        statusNotificacoes.textContent = "Carregando...";
+    }
+
+    if (listaNotificacoes && !notificacoesCache.length) {
+        listaNotificacoes.innerHTML = `
+            <div class="empty-history">
+                Carregando notificações...
+            </div>
+        `;
+    }
+
+    tempoRealAdmin.notificacoes = true;
+
+    const cancelar = db.collection("notificacoes").onSnapshot(
+        function (snapshot) {
+
+            notificacoesCache =
+                snapshot.docs
+                    .map(function (doc) {
+                        return {
+                            id: doc.id,
+                            ...doc.data({ serverTimestamps: "estimate" })
+                        };
+                    })
+                    .sort(function (a, b) {
+                        return (
+                            obterTimestamp(b.data) -
+                            obterTimestamp(a.data)
+                        );
+                    });
+
+            atualizarResumoNotificacoes();
+            renderizarNotificacoes();
+
+            if (statusNotificacoes) {
+                statusNotificacoes.textContent = "Histórico atualizado.";
+            }
+
+        },
+        function (erro) {
+
+            console.error("Tempo real das notificações indisponível:", erro);
+
+            tempoRealAdmin.notificacoes = false;
+            carregarNotificacoes();
+
+        }
+    );
+
+    tempoRealAdmin.unsubs.push(cancelar);
+
+}
+
+/* ---------- SUPORTE (CHAMADOS DE TODAS AS LOJAS) ---------- */
+
+function iniciarTempoRealChamadosAdmin() {
+
+    if (statusChamadosAdmin) {
+        statusChamadosAdmin.textContent = "Carregando chamados...";
+    }
+
+    if (listaChamadosAdmin && !chamadosCache.length) {
+        listaChamadosAdmin.innerHTML = `
+            <div class="empty-history">
+                Carregando chamados...
+            </div>
+        `;
+    }
+
+    tempoRealAdmin.chamados = true;
+
+    const cancelar = db.collectionGroup("chamados").onSnapshot(
+        function (snapshot) {
+
+            detectarNovosChamadosAdmin(snapshot);
+
+            tempoRealAdmin.docsChamados = snapshot.docs;
+
+            reconstruirChamadosAoVivoAdmin();
+
+        },
+        function (erro) {
+
+            console.error(
+                "Tempo real dos chamados indisponível " +
+                "(confira se as regras do Firestore foram publicadas):",
+                erro
+            );
+
+            tempoRealAdmin.chamados = false;
+            carregarChamadosAdmin();
+
+        }
+    );
+
+    tempoRealAdmin.unsubs.push(cancelar);
+
+}
+
+function reconstruirChamadosAoVivoAdmin() {
+
+    const chamados = [];
+
+    tempoRealAdmin.docsChamados.forEach(function (doc) {
+
+        const lojaRef = doc.ref.parent.parent;
+
+        /* Só chamados que realmente ficam dentro de uma loja. */
+        if (
+            !lojaRef ||
+            !lojaRef.parent ||
+            lojaRef.parent.id !== "lojas"
+        ) {
+            return;
+        }
+
+        const loja = tempoRealAdmin.nomesLojas.get(lojaRef.id) || {};
+
+        chamados.push({
+            id: doc.id,
+            lojaId: lojaRef.id,
+            lojaNome: loja.nome || "Sem nome",
+            lojaCodigo: loja.codigo || "—",
+            caminho: doc.ref.path,
+            referencia: doc.ref,
+            ...doc.data({ serverTimestamps: "estimate" })
+        });
+
+    });
+
+    chamados.sort(function (a, b) {
+        return (
+            obterTimestamp(b.criadoEm) -
+            obterTimestamp(a.criadoEm)
+        );
+    });
+
+    chamadosCache = chamados;
+
+    agendarRenderizacaoChamadosAdmin();
+
+}
+
+function agendarRenderizacaoChamadosAdmin() {
+
+    clearTimeout(tempoRealAdmin.timerChamados);
+
+    tempoRealAdmin.timerChamados = setTimeout(
+        executarRenderizacaoChamadosAdmin,
+        ESPERA_RENDER_CHAMADOS_MS
+    );
+
+}
+
+function executarRenderizacaoChamadosAdmin() {
+
+    if (!tempoRealAdmin.chamados) return;
+
+    /* Não redesenha enquanto a pessoa mexe num campo da lista (não perde o que escolheu/digitou). */
+    const ativo = document.activeElement;
+
+    if (
+        ativo &&
+        listaChamadosAdmin &&
+        listaChamadosAdmin.contains(ativo) &&
+        /^(SELECT|TEXTAREA|INPUT)$/.test(ativo.tagName)
+    ) {
+        tempoRealAdmin.timerChamados = setTimeout(
+            executarRenderizacaoChamadosAdmin,
+            1500
+        );
+        return;
+    }
+
+    try {
+
+        atualizarResumoChamadosAdmin();
+        renderizarChamadosAdmin();
+
+        if (statusChamadosAdmin) {
+            statusChamadosAdmin.textContent =
+                `${chamadosCache.length} ${
+                    chamadosCache.length === 1
+                        ? "chamado encontrado"
+                        : "chamados encontrados"
+                }.`;
+        }
+
+    } catch (erro) {
+
+        console.error("Erro ao atualizar chamados em tempo real:", erro);
+
+    }
+
+}
+
+/* =====================================================
+   SOM DE NOVO CHAMADO
+   Toca um "ding" curto quando chega um chamado novo
+   (não toca ao abrir o painel nem em atualizações de chamados já existentes).
+   Botão "Som" na aba Suporte liga/desliga e lembra a escolha.
+===================================================== */
+
+const CHAVE_SOM_CHAMADOS_ADMIN = "gestokSomChamadosAdmin";
+let contextoSomAdmin = null;
+let ultimoSomChamadoAdmin = 0;
+
+function somChamadosAtivoAdmin() {
+
+    try {
+        return localStorage.getItem(CHAVE_SOM_CHAMADOS_ADMIN) !== "0";
+    } catch (erro) {
+        return true;
+    }
+
+}
+
+function obterContextoSomAdmin() {
+
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+
+    if (!AudioCtx) return null;
+
+    if (!contextoSomAdmin) {
+        contextoSomAdmin = new AudioCtx();
+    }
+
+    if (contextoSomAdmin.state === "suspended") {
+        contextoSomAdmin.resume().catch(function () {});
+    }
+
+    return contextoSomAdmin;
+
+}
+
+function tocarSomNovoChamadoAdmin(forcar = false) {
+
+    if (!forcar && !somChamadosAtivoAdmin()) return;
+
+    /* Vários chamados no mesmo instante = um som só. */
+    const agora = Date.now();
+
+    if (!forcar && agora - ultimoSomChamadoAdmin < 1500) return;
+
+    ultimoSomChamadoAdmin = agora;
+
+    try {
+
+        const ctx = obterContextoSomAdmin();
+
+        if (!ctx) return;
+
+        const inicio = ctx.currentTime + 0.02;
+
+        /* Duas notas suaves (lá + mi agudo). */
+        [[880, 0], [1318.5, 0.17]].forEach(function (nota) {
+
+            const osc = ctx.createOscillator();
+            const ganho = ctx.createGain();
+
+            osc.type = "sine";
+            osc.frequency.value = nota[0];
+
+            const t = inicio + nota[1];
+
+            ganho.gain.setValueAtTime(0.0001, t);
+            ganho.gain.exponentialRampToValueAtTime(0.22, t + 0.02);
+            ganho.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+
+            osc.connect(ganho);
+            ganho.connect(ctx.destination);
+
+            osc.start(t);
+            osc.stop(t + 0.55);
+
+        });
+
+    } catch (erro) {
+
+        console.warn("Não foi possível tocar o som de chamado:", erro);
+
+    }
+
+}
+
+/* Compara com os chamados já conhecidos; só chamado inédito toca o som. */
+function detectarNovosChamadosAdmin(snapshot) {
+
+    const conhecidos = tempoRealAdmin.chamadosConhecidos;
+
+    /* A primeira carga (e qualquer carga vinda só do cache) apenas "decora" os existentes. */
+    if (!tempoRealAdmin.baseChamados) {
+
+        snapshot.docs.forEach(function (doc) {
+            conhecidos.add(doc.ref.path);
+        });
+
+        if (!snapshot.metadata.fromCache) {
+            tempoRealAdmin.baseChamados = true;
+        }
+
+        return;
+
+    }
+
+    let chegouNovo = false;
+
+    snapshot.docChanges().forEach(function (mudanca) {
+
+        if (mudanca.type !== "added") return;
+
+        const caminho = mudanca.doc.ref.path;
+
+        if (conhecidos.has(caminho)) return;
+
+        conhecidos.add(caminho);
+        chegouNovo = true;
+
+    });
+
+    if (chegouNovo) {
+        tocarSomNovoChamadoAdmin();
+    }
+
+}
+
+/* Botão "Som" + liberação do áudio (navegadores só permitem som depois de um clique). */
+(function iniciarControleSomChamadosAdmin() {
+
+    const botao = document.getElementById("btnSomChamados");
+
+    function atualizarBotao() {
+
+        if (!botao) return;
+
+        const ativo = somChamadosAtivoAdmin();
+
+        botao.textContent = ativo ? "🔔 Som ligado" : "🔕 Som desligado";
+        botao.setAttribute("aria-pressed", ativo ? "true" : "false");
+        botao.classList.toggle("off", !ativo);
+
+    }
+
+    function liberarAudio() {
+
+        obterContextoSomAdmin();
+
+        document.removeEventListener("click", liberarAudio);
+        document.removeEventListener("keydown", liberarAudio);
+
+    }
+
+    document.addEventListener("click", liberarAudio);
+    document.addEventListener("keydown", liberarAudio);
+
+    if (!botao) return;
+
+    atualizarBotao();
+
+    botao.addEventListener("click", function () {
+
+        const vaiLigar = !somChamadosAtivoAdmin();
+
+        try {
+            localStorage.setItem(CHAVE_SOM_CHAMADOS_ADMIN, vaiLigar ? "1" : "0");
+        } catch (erro) {
+            /* sem armazenamento: vale só até recarregar */
+        }
+
+        atualizarBotao();
+
+        /* Ao ligar, toca uma vez para a pessoa ouvir como é. */
+        if (vaiLigar) {
+            tocarSomNovoChamadoAdmin(true);
+        }
+
+    });
+
+})();
