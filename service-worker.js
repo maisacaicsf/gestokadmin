@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gestok-admin-shell-v1';
+const CACHE_NAME = 'gestok-admin-shell-v2';
 const APP_SHELL = ['./', './index.html', './style.css', './script.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', event => {

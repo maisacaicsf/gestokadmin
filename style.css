@@ -3095,3 +3095,155 @@ td strong {
         font-size: 12px;
     }
 }
+
+
+/* =====================================================
+   ABA TEMAS
+===================================================== */
+.tema-status {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.tema-status.erro {
+    color: var(--red);
+    font-weight: 700;
+}
+
+.temas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 14px;
+}
+
+.tema-card {
+    background: var(--white);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 12px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.tema-card.ativo {
+    border-color: var(--green);
+}
+
+.tema-preview {
+    height: 84px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px;
+}
+
+.tema-emoji {
+    font-size: 30px;
+    margin-right: auto;
+}
+
+.tema-amostra {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, .7);
+}
+
+.tema-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.tema-badge {
+    background: #e3f6ec;
+    color: var(--green);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 99px;
+}
+
+.tema-acoes {
+    display: flex;
+    gap: 6px;
+}
+
+.tema-acoes .refresh-button {
+    flex: 1;
+}
+
+.tema-acoes .refresh-button:disabled {
+    opacity: .55;
+    cursor: default;
+}
+
+.tema-remover {
+    border: 1px solid var(--border);
+    background: #fff;
+    border-radius: 9px;
+    padding: 0 11px;
+    cursor: pointer;
+}
+
+.tema-remover:hover {
+    border-color: var(--red);
+}
+
+.tema-novo {
+    margin-top: 28px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+}
+
+.tema-novo h2 {
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+.tema-novo-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.tema-novo-form input[type="text"] {
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 12px;
+}
+
+.tema-novo-form input[name],
+#novoTemaEmoji {
+    width: 80px;
+}
+
+.tema-novo-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.tema-novo-form input[type="color"] {
+    width: 54px;
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2px;
+    background: #fff;
+}

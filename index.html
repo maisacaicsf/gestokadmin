@@ -222,6 +222,16 @@
                     Suporte
                 </button>
 
+
+                <button
+                    type="button"
+                    class="admin-tab"
+                    data-tab="temas"
+                    id="tabTemas"
+                >
+                    Temas
+                </button>
+
             </div>
 
 
@@ -926,6 +936,86 @@
             </section>
 
 
+        
+            <!-- =================================================
+                 ABA TEMAS
+            ================================================== -->
+
+            <section
+                class="tab-content"
+                id="tabContentTemas"
+            >
+
+                <div class="page-header">
+
+                    <div>
+
+                        <span class="eyebrow">
+                            APARÊNCIA
+                        </span>
+
+                        <h1>
+                            Temas
+                        </h1>
+
+                        <p>
+                            Escolha o tema de datas especiais que todas as lojas verão no Gestok.
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <p class="tema-status" id="temaStatus">Carregando temas...</p>
+
+                <div class="temas-grid" id="listaTemas"></div>
+
+                <div class="tema-novo">
+
+                    <h2>Adicionar tema personalizado</h2>
+
+                    <form id="formNovoTema" class="tema-novo-form">
+
+                        <input
+                            type="text"
+                            id="novoTemaNome"
+                            placeholder="Nome (ex.: Dia das Mães)"
+                            maxlength="30"
+                            required
+                        >
+
+                        <input
+                            type="text"
+                            id="novoTemaEmoji"
+                            placeholder="Emoji"
+                            maxlength="4"
+                        >
+
+                        <label>
+                            Principal
+                            <input type="color" id="novoTemaPrimaria" value="#d946ef">
+                        </label>
+
+                        <label>
+                            Destaque
+                            <input type="color" id="novoTemaDestaque" value="#f59e0b">
+                        </label>
+
+                        <label>
+                            Fundo
+                            <input type="color" id="novoTemaFundo" value="#fff5fb">
+                        </label>
+
+                        <button type="submit" class="refresh-button">
+                            + Adicionar tema
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </section>
+
         </main>
 
     </section>
@@ -1119,9 +1209,6 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 
-    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
 

@@ -6,6 +6,12 @@
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+/* Se a conexão em tempo real falhar (QUIC bloqueado, proxy, antivírus),
+   o Firestore troca sozinho para "long polling". */
+try {
+    db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
+} catch (erro) { }
+
 
 /* =====================================================
    LOGIN
@@ -1723,7 +1729,10 @@ document
                             "tabContentNotificacoes",
 
                         suporte:
-                            "tabContentSuporte"
+                            "tabContentSuporte",
+
+                        temas:
+                            "tabContentTemas"
 
                     };
 
@@ -5199,6 +5208,7 @@ function iniciarTempoRealAdmin() {
     iniciarTempoRealLojasAdmin();
     iniciarTempoRealNotificacoesAdmin();
     iniciarTempoRealChamadosAdmin();
+    iniciarTempoRealTemasAdmin();
 
 }
 
@@ -5817,5 +5827,239 @@ function detectarNovosChamadosAdmin(snapshot) {
         }
 
     });
+
+})();
+
+
+/* =====================================================
+   TEMAS (Black Friday, Natal, Ano Novo, personalizados)
+   -----------------------------------------------------
+   Firestore:
+   configuracoes/tema   -> tema ATIVO que o app Gestok lê
+        { ativo, nome, emoji, cores:{primaria,destaque,fundo,texto},
+          atualizadoEm, atualizadoPor }
+   configuracoes/temas  -> temas personalizados criados aqui
+        { personalizados: [ {id,nome,emoji,cores} ] }
+===================================================== */
+
+const TEMAS_PADRAO_ADMIN = [
+    {
+        id: "padrao",
+        nome: "Padrão",
+        emoji: "🏷️",
+        cores: { primaria: "#3478e5", destaque: "#159957", fundo: "#f5f7fa", texto: "#171a1f" }
+    },
+    {
+        id: "blackfriday",
+        nome: "Black Friday",
+        emoji: "🛍️",
+        cores: { primaria: "#111111", destaque: "#f5c518", fundo: "#0b0b0f", texto: "#ffffff" }
+    },
+    {
+        id: "natal",
+        nome: "Natal",
+        emoji: "🎄",
+        cores: { primaria: "#c0392b", destaque: "#1e8449", fundo: "#fff8f0", texto: "#2b1a1a" }
+    },
+    {
+        id: "anonovo",
+        nome: "Ano Novo",
+        emoji: "🎆",
+        cores: { primaria: "#1e293b", destaque: "#d4af37", fundo: "#0f172a", texto: "#ffffff" }
+    }
+];
+
+const temasEstado = {
+    ativo: "padrao",
+    personalizados: [],
+    carregouAtivo: false
+};
+
+function listaTodosTemasAdmin() {
+    return TEMAS_PADRAO_ADMIN.concat(temasEstado.personalizados);
+}
+
+function renderizarTemasAdmin() {
+
+    const lista = document.getElementById("listaTemas");
+    if (!lista) return;
+
+    lista.innerHTML = listaTodosTemasAdmin().map(function (tema) {
+
+        const ativo = temasEstado.ativo === tema.id;
+        const custom = !TEMAS_PADRAO_ADMIN.some(function (t) { return t.id === tema.id; });
+        const c = tema.cores;
+
+        return `
+            <div class="tema-card ${ativo ? "ativo" : ""}">
+                <div class="tema-preview" style="background:${escaparHtml(c.fundo)}">
+                    <span class="tema-emoji">${escaparHtml(tema.emoji || "🎨")}</span>
+                    <span class="tema-amostra" style="background:${escaparHtml(c.primaria)}"></span>
+                    <span class="tema-amostra" style="background:${escaparHtml(c.destaque)}"></span>
+                </div>
+                <div class="tema-info">
+                    <strong>${escaparHtml(tema.nome)}</strong>
+                    ${ativo ? '<span class="tema-badge">Ativo agora</span>' : ""}
+                </div>
+                <div class="tema-acoes">
+                    <button type="button" class="refresh-button tema-ativar"
+                        data-tema="${escaparHtml(tema.id)}" ${ativo ? "disabled" : ""}>
+                        ${ativo ? "Ativado" : (tema.id === "padrao" ? "Voltar ao padrão" : "Ativar")}
+                    </button>
+                    ${custom ? `<button type="button" class="tema-remover"
+                        data-remover="${escaparHtml(tema.id)}" title="Remover tema">🗑</button>` : ""}
+                </div>
+            </div>
+        `;
+
+    }).join("");
+
+}
+
+function statusTemasAdmin(texto, erro) {
+    const el = document.getElementById("temaStatus");
+    if (!el) return;
+    el.textContent = texto;
+    el.classList.toggle("erro", !!erro);
+}
+
+async function ativarTemaAdmin(id) {
+
+    const tema = listaTodosTemasAdmin().find(function (t) { return t.id === id; });
+    if (!tema) return;
+
+    statusTemasAdmin("Aplicando tema...");
+
+    try {
+
+        await db.collection("configuracoes").doc("tema").set({
+            ativo: tema.id,
+            nome: tema.nome,
+            emoji: tema.emoji || "",
+            cores: tema.cores,
+            atualizadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+            atualizadoPor: (auth.currentUser && auth.currentUser.email) || ""
+        });
+
+        statusTemasAdmin(
+            tema.id === "padrao"
+                ? "Tema padrão restaurado para todas as lojas."
+                : `Tema "${tema.nome}" ativado para todas as lojas.`
+        );
+
+    } catch (erro) {
+        console.error("Erro ao ativar tema:", erro);
+        statusTemasAdmin("Não foi possível aplicar o tema. Verifique as regras do Firestore.", true);
+    }
+
+}
+
+async function salvarPersonalizadosAdmin(lista) {
+    await db.collection("configuracoes").doc("temas").set({ personalizados: lista });
+}
+
+async function removerTemaAdmin(id) {
+
+    if (!confirm("Remover este tema personalizado?")) return;
+
+    try {
+
+        const lista = temasEstado.personalizados.filter(function (t) { return t.id !== id; });
+        await salvarPersonalizadosAdmin(lista);
+
+        if (temasEstado.ativo === id) {
+            await ativarTemaAdmin("padrao");
+        }
+
+    } catch (erro) {
+        console.error("Erro ao remover tema:", erro);
+        statusTemasAdmin("Não foi possível remover o tema.", true);
+    }
+
+}
+
+function iniciarTempoRealTemasAdmin() {
+
+    temasEstado.ativo = "padrao";
+    temasEstado.personalizados = [];
+    renderizarTemasAdmin();
+
+    const cancelarAtivo = db.collection("configuracoes").doc("tema").onSnapshot(
+        function (doc) {
+            temasEstado.ativo = doc.exists ? (doc.data().ativo || "padrao") : "padrao";
+            temasEstado.carregouAtivo = true;
+            const atual = listaTodosTemasAdmin().find(function (t) { return t.id === temasEstado.ativo; });
+            statusTemasAdmin(
+                temasEstado.ativo === "padrao"
+                    ? "Nenhum tema especial ativo. As lojas usam o visual padrão."
+                    : `Tema ativo nas lojas: ${atual ? atual.nome : temasEstado.ativo}.`
+            );
+            renderizarTemasAdmin();
+        },
+        function (erro) {
+            console.error("Temas indisponíveis:", erro);
+            statusTemasAdmin("Sem permissão para ler os temas. Veja as regras do Firestore.", true);
+        }
+    );
+
+    const cancelarLista = db.collection("configuracoes").doc("temas").onSnapshot(
+        function (doc) {
+            temasEstado.personalizados = doc.exists ? (doc.data().personalizados || []) : [];
+            renderizarTemasAdmin();
+        },
+        function (erro) {
+            console.error("Temas personalizados indisponíveis:", erro);
+        }
+    );
+
+    tempoRealAdmin.unsubs.push(cancelarAtivo, cancelarLista);
+
+}
+
+(function iniciarControlesTemasAdmin() {
+
+    const lista = document.getElementById("listaTemas");
+    const form = document.getElementById("formNovoTema");
+
+    if (lista) {
+        lista.addEventListener("click", function (e) {
+            const ativar = e.target.closest("[data-tema]");
+            const remover = e.target.closest("[data-remover]");
+            if (ativar && !ativar.disabled) ativarTemaAdmin(ativar.dataset.tema);
+            if (remover) removerTemaAdmin(remover.dataset.remover);
+        });
+    }
+
+    if (form) {
+        form.addEventListener("submit", async function (e) {
+
+            e.preventDefault();
+
+            const nome = document.getElementById("novoTemaNome").value.trim();
+            if (!nome) return;
+
+            const tema = {
+                id: "custom_" + Date.now().toString(36),
+                nome: nome,
+                emoji: document.getElementById("novoTemaEmoji").value.trim() || "🎨",
+                cores: {
+                    primaria: document.getElementById("novoTemaPrimaria").value,
+                    destaque: document.getElementById("novoTemaDestaque").value,
+                    fundo: document.getElementById("novoTemaFundo").value,
+                    texto: "#171a1f"
+                }
+            };
+
+            try {
+                await salvarPersonalizadosAdmin(temasEstado.personalizados.concat([tema]));
+                form.reset();
+                statusTemasAdmin(`Tema "${nome}" adicionado. Clique em Ativar para usar.`);
+            } catch (erro) {
+                console.error("Erro ao adicionar tema:", erro);
+                statusTemasAdmin("Não foi possível adicionar o tema.", true);
+            }
+
+        });
+    }
 
 })();
