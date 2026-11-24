@@ -6063,3 +6063,19 @@ function iniciarTempoRealTemasAdmin() {
     }
 
 })();
+
+
+/* Mantém a aba ativa visível na barra de abas (celular) */
+(function () {
+    function mostrarAbaAtiva() {
+        var ativa = document.querySelector(".admin-tab.active");
+        if (ativa && ativa.scrollIntoView) {
+            ativa.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+        }
+    }
+    document.addEventListener("click", function (e) {
+        if (e.target.closest && e.target.closest(".admin-tab")) {
+            setTimeout(mostrarAbaAtiva, 50);
+        }
+    });
+})();

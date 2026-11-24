@@ -3247,3 +3247,44 @@ td strong {
     padding: 2px;
     background: #fff;
 }
+
+
+/* Abas do admin no celular: não encolhem, rolam para o lado e a rolagem é suave */
+.admin-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+}
+
+.admin-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.admin-tab {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    scroll-snap-align: start;
+}
+
+@media (max-width: 650px) {
+    .admin-tabs {
+        margin-left: -4px;
+        margin-right: -4px;
+        padding: 0 4px 4px;
+    }
+
+    .admin-tab {
+        padding: 12px 18px;
+        font-size: 12px;
+    }
+
+    .temas-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .tema-novo-form input[type="text"] {
+        flex: 1 1 100%;
+    }
+}
